@@ -1,0 +1,81 @@
+{
+  "forecasts": {},
+  "model_performance": {},
+  "insights": {
+    "overall_trends": {},
+    "comparative_analysis": {
+      "star_level_trends": {},
+      "regional_trends": {}
+    },
+    "risk_assessment": {
+      "high_volatility_series": [],
+      "declining_trends": [],
+      "overall_risk_level": "low"
+    },
+    "recommendations": []
+  },
+  "time_series_data": {
+    "total_awards": {
+      "data_points": 1,
+      "date_range": "2019-2019",
+      "value_range": "695-695"
+    },
+    "1_star_awards": {
+      "data_points": 1,
+      "date_range": "2019-2019",
+      "value_range": "549-549"
+    },
+    "2_star_awards": {
+      "data_points": 1,
+      "date_range": "2019-2019",
+      "value_range": "110-110"
+    },
+    "3_star_awards": {
+      "data_points": 1,
+      "date_range": "2019-2019",
+      "value_range": "36-36"
+    }
+  },
+  "forecast_parameters": {
+    "forecast_years": 5,
+    "models_trained": 0,
+    "successful_forecasts": 0
+  },
+  "processing_log": [
+    {
+      "timestamp": "2025-05-26T11:18:24.440385",
+      "operation": "Prepare time series data",
+      "details": {
+        "total_series": 4,
+        "series_names": [
+          "total_awards",
+          "1_star_awards",
+          "2_star_awards",
+          "3_star_awards"
+        ],
+        "date_range": "2019-2019",
+        "total_records": 695
+      }
+    },
+    {
+      "timestamp": "2025-05-26T11:18:24.443103",
+      "operation": "Analyze insights",
+      "details": {
+        "total_series_analyzed": 0,
+        "high_volatility_count": 0,
+        "declining_trends_count": 0,
+        "recommendations_generated": 0
+      }
+    },
+    {
+      "timestamp": "2025-05-26T11:18:24.443103",
+      "operation": "Forecasting process completed",
+      "details": {
+        "total_models_trained": 0,
+        "successful_forecasts": 0,
+        "forecast_period": "2026-2030",
+        "insights_generated": true
+      }
+    }
+  ]
+}

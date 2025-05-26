@@ -1,0 +1,170 @@
+{
+  "cleaning_log": [
+    {
+      "timestamp": "2025-05-26T11:18:19.455240",
+      "operation": "Fill city with Unknown",
+      "details": {
+        "filled_values": 2
+      }
+    },
+    {
+      "timestamp": "2025-05-26T11:18:19.457246",
+      "operation": "Fill zipCode with Unknown",
+      "details": {
+        "filled_values": 194
+      }
+    },
+    {
+      "timestamp": "2025-05-26T11:18:19.459688",
+      "operation": "Missing values summary",
+      "details": {
+        "before": {
+          "name": 0,
+          "year": 0,
+          "latitude": 0,
+          "longitude": 0,
+          "city": 2,
+          "region": 0,
+          "zipCode": 194,
+          "cuisine": 0,
+          "price": 176,
+          "url": 0,
+          "stars": 0
+        },
+        "after": {
+          "name": 0,
+          "year": 0,
+          "latitude": 0,
+          "longitude": 0,
+          "city": 0,
+          "region": 0,
+          "zipCode": 0,
+          "cuisine": 0,
+          "price": 176,
+          "url": 0,
+          "stars": 0
+        }
+      }
+    },
+    {
+      "timestamp": "2025-05-26T11:18:19.462738",
+      "operation": "Handle outliers in latitude",
+      "details": {
+        "outliers_count": 18,
+        "lower_bound": -14.661648749999998,
+        "upper_bound": 90
+      }
+    },
+    {
+      "timestamp": "2025-05-26T11:18:19.468161",
+      "operation": "Handle outliers in year",
+      "details": {
+        "outliers_count": 39,
+        "lower_bound": 2019.0,
+        "upper_bound": 2019.0
+      }
+    },
+    {
+      "timestamp": "2025-05-26T11:18:19.469165",
+      "operation": "Standardize name",
+      "details": {
+        "unique_before": 684,
+        "unique_after": 684
+      }
+    },
+    {
+      "timestamp": "2025-05-26T11:18:19.471165",
+      "operation": "Standardize city",
+      "details": {
+        "unique_before": 180,
+        "unique_after": 180
+      }
+    },
+    {
+      "timestamp": "2025-05-26T11:18:19.472164",
+      "operation": "Standardize region",
+      "details": {
+        "unique_before": 24,
+        "unique_after": 24
+      }
+    },
+    {
+      "timestamp": "2025-05-26T11:18:19.474784",
+      "operation": "Standardize cuisine",
+      "details": {
+        "unique_before": 70,
+        "unique_after": 62
+      }
+    },
+    {
+      "timestamp": "2025-05-26T11:18:19.477711",
+      "operation": "Standardize price",
+      "details": {
+        "unique_before": 5,
+        "unique_after": 6,
+        "price_distribution": {
+          "Very Expensive": 197,
+          "Unknown": 176,
+          "Expensive": 143,
+          "Moderate": 75,
+          "Luxury": 73,
+          "Budget": 31
+        }
+      }
+    },
+    {
+      "timestamp": "2025-05-26T11:18:19.487377",
+      "operation": "Add derived features",
+      "details": {
+        "new_features": [
+          "years_since_award",
+          "decade",
+          "hemisphere",
+          "continent",
+          "has_url",
+          "name_length",
+          "name_word_count"
+        ]
+      }
+    },
+    {
+      "timestamp": "2025-05-26T11:18:19.489377",
+      "operation": "Remove duplicates",
+      "details": {
+        "original_count": 695,
+        "final_count": 695,
+        "removed_count": 0
+      }
+    },
+    {
+      "timestamp": "2025-05-26T11:18:19.489377",
+      "operation": "Data cleaning completed",
+      "details": {
+        "original_shape": [
+          695,
+          11
+        ],
+        "cleaned_shape": [
+          695,
+          20
+        ],
+        "records_removed": 0,
+        "features_added": 9
+      }
+    }
+  ],
+  "original_shape": [
+    695,
+    11
+  ],
+  "cleaned_shape": [
+    695,
+    20
+  ],
+  "summary": {
+    "total_operations": 13,
+    "records_processed": 695,
+    "final_records": 695,
+    "data_reduction_rate": 0.0
+  }
+}
