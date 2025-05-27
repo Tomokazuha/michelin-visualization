@@ -53,6 +53,16 @@ const routes = [
     }
   },
   {
+    path: '/advanced-viz',
+    name: 'AdvancedViz',
+    component: () => import('@/views/AdvancedViz.vue'),
+    meta: {
+      title: '高级可视化',
+      icon: 'el-icon-data-analysis',
+      description: '深度分析与高级图表'
+    }
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: NotFound,
@@ -89,4 +99,4 @@ router.afterEach((to, from) => {
   console.log(`路由切换: ${from.path} -> ${to.path}`)
 })
 
-export default router 
+export default router

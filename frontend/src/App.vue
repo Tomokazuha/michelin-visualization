@@ -13,13 +13,14 @@
     </main>
     
     <!-- 全局加载指示器 -->
-    <el-loading
+    <div
       v-loading="globalLoading"
       element-loading-text="正在加载数据..."
       element-loading-spinner="el-icon-loading"
       element-loading-background="rgba(0, 0, 0, 0.8)"
-      body-style="{ overflow: 'hidden' }"
-    />
+      style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; pointer-events: none;"
+      v-if="globalLoading"
+    ></div>
     
     <!-- 全局消息提示 -->
     <GlobalMessage />
@@ -33,6 +34,8 @@ import { useAppStore } from '@/store/app'
 import { useDataStore } from '@/store/data'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import GlobalMessage from '@/components/common/GlobalMessage.vue'
+import * as echarts from 'echarts'
+import 'echarts/extension/bmap/bmap'
 
 const router = useRouter()
 const route = useRoute()
@@ -93,6 +96,12 @@ onMounted(() => {
   onUnmounted(() => {
     document.removeEventListener('keydown', handleKeydown)
   })
+})
+
+// 预先注册世界地图组件
+echarts.registerMap('world', {
+  type: 'FeatureCollection',
+  features: []
 })
 </script>
 

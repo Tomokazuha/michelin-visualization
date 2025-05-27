@@ -14,6 +14,7 @@
     "axios": "^1.5.0",
     "dayjs": "^1.11.9",
     "echarts": "^5.4.3",
+    "echarts-gl": "^2.0.9",
     "element-plus": "^2.3.12",
     "leaflet": "^1.9.4",
     "lodash": "^4.17.21",

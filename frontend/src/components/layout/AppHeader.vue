@@ -40,6 +40,10 @@
             <el-icon><Search /></el-icon>
             <span>数据探索</span>
           </el-menu-item>
+          <el-menu-item index="/advanced-viz">
+            <el-icon><DataAnalysis /></el-icon>
+            <span>高级可视化</span>
+          </el-menu-item>
         </el-menu>
       </nav>
 
@@ -265,4 +269,4 @@ const handleCommand = (command) => {
     }
   }
 }
-</style> 
+</style>
