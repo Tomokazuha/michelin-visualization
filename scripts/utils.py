@@ -334,4 +334,202 @@ def create_project_summary() -> Dict[str, Any]:
 
 # 全局实例
 path_manager = PathManager()
-cache_manager = CacheManager() 
+cache_manager = CacheManager()
+
+def setup_directories(directories):
+    """
+    确保目录存在，如果不存在则创建
+    
+    Args:
+        directories: 目录路径列表
+    """
+    for directory in directories:
+        if not isinstance(directory, Path):
+            directory = Path(directory)
+        directory.mkdir(parents=True, exist_ok=True)
+        logger.info(f"目录准备完成: {directory}")
+
+def load_restaurants(raw_data_dir):
+    """
+    从raw目录加载所有米其林餐厅数据
+    
+    Args:
+        raw_data_dir: 原始数据目录
+        
+    Returns:
+        合并后的DataFrame
+    """
+    logger.info(f"从{raw_data_dir}加载米其林餐厅数据")
+    
+    # 检查目录是否存在
+    if not isinstance(raw_data_dir, Path):
+        raw_data_dir = Path(raw_data_dir)
+    
+    if not raw_data_dir.exists():
+        raise FileNotFoundError(f"原始数据目录不存在: {raw_data_dir}")
+    
+    # 加载各星级餐厅数据
+    dataframes = []
+    files = [
+        "one-star-michelin-restaurants.csv",
+        "two-stars-michelin-restaurants.csv", 
+        "three-stars-michelin-restaurants.csv"
+    ]
+    
+    for file in files:
+        file_path = raw_data_dir / file
+        if file_path.exists():
+            try:
+                df = pd.read_csv(file_path)
+                # 从文件名提取星级信息
+                if "one-star" in file:
+                    df['stars'] = 1
+                elif "two-stars" in file:
+                    df['stars'] = 2
+                elif "three-stars" in file:
+                    df['stars'] = 3
+                
+                # 基本数据验证
+                if len(df) > 0:
+                    dataframes.append(df)
+                    logger.info(f"从{file}加载了{len(df)}条餐厅记录")
+                else:
+                    logger.warning(f"文件{file}不包含任何数据")
+                
+            except Exception as e:
+                logger.error(f"加载{file}时出错: {e}")
+        else:
+            logger.warning(f"文件不存在: {file_path}")
+    
+    if not dataframes:
+        raise FileNotFoundError("未找到任何有效的米其林餐厅数据文件")
+    
+    # 合并所有数据
+    combined_df = pd.concat(dataframes, ignore_index=True)
+    logger.info(f"合并数据集包含{len(combined_df)}条餐厅记录")
+    
+    return combined_df
+
+def preprocess_restaurant_data(df):
+    """
+    预处理餐厅数据用于聚类分析
+    
+    Args:
+        df: 原始餐厅数据DataFrame
+        
+    Returns:
+        预处理后的DataFrame
+    """
+    # 复制数据，避免修改原始数据
+    processed_df = df.copy()
+    
+    logger.info(f"开始预处理{len(processed_df)}条餐厅数据")
+    
+    # 1. 处理列名 - 确保列名规范化
+    processed_df.columns = [col.lower().strip().replace(' ', '_') for col in processed_df.columns]
+    
+    # 2. 检查必要的列是否存在
+    required_columns = ['name', 'stars']
+    missing_columns = [col for col in required_columns if col not in processed_df.columns]
+    if missing_columns:
+        logger.warning(f"数据缺少必要的列: {missing_columns}")
+        # 添加缺失的列
+        for col in missing_columns:
+            if col == 'stars':
+                # 默认为1星
+                processed_df['stars'] = 1
+                logger.info("添加默认星级列(stars=1)")
+            else:
+                processed_df[col] = None
+                logger.info(f"添加空列: {col}")
+    
+    # 3. 处理缺失值
+    # 为数值型字段填充缺失值
+    num_cols = ['stars', 'latitude', 'longitude']
+    for col in num_cols:
+        if col in processed_df.columns:
+            # 为数值列填充0
+            processed_df[col] = processed_df[col].fillna(0)
+    
+    # 为字符型字段填充缺失值
+    str_cols = ['name', 'city', 'region', 'cuisine', 'price']
+    for col in str_cols:
+        if col in processed_df.columns:
+            # 为字符列填充'未知'
+            processed_df[col] = processed_df[col].fillna('未知')
+    
+    # 4. 数据类型转换
+    # 确保星级是整数
+    if 'stars' in processed_df.columns:
+        processed_df['stars'] = processed_df['stars'].astype(int)
+    
+    # 确保经纬度是浮点数
+    if 'latitude' in processed_df.columns and 'longitude' in processed_df.columns:
+        processed_df['latitude'] = pd.to_numeric(processed_df['latitude'], errors='coerce').fillna(0)
+        processed_df['longitude'] = pd.to_numeric(processed_df['longitude'], errors='coerce').fillna(0)
+    
+    # 5. 去除重复记录
+    before_drop = len(processed_df)
+    processed_df = processed_df.drop_duplicates(subset=['name', 'city'], keep='first')
+    after_drop = len(processed_df)
+    if before_drop > after_drop:
+        logger.info(f"移除了{before_drop - after_drop}条重复记录")
+    
+    # 6. 处理价格信息 - 转换为价格级别
+    if 'price' in processed_df.columns:
+        # 创建价格级别
+        def parse_price_level(price):
+            if pd.isna(price) or price == '未知':
+                return 2  # 默认中等价位
+            if isinstance(price, str):
+                if price.startswith('¥'):
+                    return len(price)  # 根据¥符号数量确定级别
+                elif price.isdigit() or (price.replace('.', '', 1).isdigit() and price.count('.') <= 1):
+                    # 如果是数字，根据数值范围确定级别
+                    try:
+                        price_val = float(price)
+                        if price_val < 300:
+                            return 1
+                        elif price_val < 800:
+                            return 2
+                        elif price_val < 1500:
+                            return 3
+                        elif price_val < 3000:
+                            return 4
+                        else:
+                            return 5
+                    except:
+                        return 2
+            return 2  # 默认中等价位
+        
+        processed_df['price_level'] = processed_df['price'].apply(parse_price_level)
+        logger.info("已创建价格级别(price_level)列")
+    
+    # 7. 规范化菜系信息
+    if 'cuisine' in processed_df.columns:
+        # 处理菜系，规范化格式
+        processed_df['cuisine'] = processed_df['cuisine'].str.strip()
+        
+        # 合并相似菜系
+        cuisine_mapping = {
+            '日本': '日式',
+            '日本料理': '日式',
+            '日料': '日式',
+            '法国': '法式',
+            '法餐': '法式',
+            '意大利': '意式',
+            '意餐': '意式',
+            '中国': '中式',
+            '中餐': '中式',
+            '亚洲': '亚洲风味',
+            '东南亚': '亚洲风味',
+            '现代': '现代创新',
+            '创意': '现代创新',
+            '创新': '现代创新'
+        }
+        
+        for old, new in cuisine_mapping.items():
+            processed_df.loc[processed_df['cuisine'].str.contains(old, na=False), 'cuisine'] = new
+    
+    logger.info(f"数据预处理完成，最终数据集包含{len(processed_df)}条记录")
+    return processed_df 

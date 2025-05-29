@@ -61,29 +61,6 @@
             clearable
           />
         </div>
-
-        <!-- 设置按钮 -->
-        <el-dropdown @command="handleCommand">
-          <el-button circle size="small">
-            <el-icon><Setting /></el-icon>
-          </el-button>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="theme">
-                <el-icon><Sunny /></el-icon>
-                主题设置
-              </el-dropdown-item>
-              <el-dropdown-item command="language">
-                <el-icon><Monitor /></el-icon>
-                语言设置
-              </el-dropdown-item>
-              <el-dropdown-item command="about" divided>
-                <el-icon><InfoFilled /></el-icon>
-                关于项目
-              </el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
       </div>
     </div>
   </header>
@@ -98,11 +75,7 @@ import {
   DataAnalysis,
   Location,
   TrendCharts,
-  Search,
-  Setting,
-  Sunny,
-  Monitor,
-  InfoFilled
+  Search
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -126,20 +99,6 @@ const handleSearch = () => {
       path: '/explore',
       query: { q: searchQuery.value.trim() }
     })
-  }
-}
-
-const handleCommand = (command) => {
-  switch (command) {
-    case 'theme':
-      appStore.toggleTheme()
-      break
-    case 'language':
-      appStore.toggleLanguage()
-      break
-    case 'about':
-      appStore.showAboutDialog()
-      break
   }
 }
 </script>

@@ -46,6 +46,24 @@
                 </el-button>
               </el-form-item>
             </el-form>
+
+            <!-- 新增：显示比例控制条 -->
+            <div class="display-ratio-control">
+              <div class="control-header">
+                <span>显示比例: {{ displayRatio }}%</span>
+                <el-tooltip content="控制在地图上显示的餐厅比例，减少显示数量可提高性能" placement="top">
+                  <el-icon><InfoFilled /></el-icon>
+                </el-tooltip>
+              </div>
+              <el-slider 
+                v-model="displayRatio" 
+                :min="10" 
+                :max="100" 
+                :step="10"
+                :marks="{10: '10%', 50: '50%', 100: '100%'}"
+                @change="applyDisplayRatio"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -56,7 +74,10 @@
           <div class="map-header">
             <div>
               <h3 class="card-title">全球分布地图</h3>
-              <p class="card-subtitle">显示 {{ filteredCount }} 家餐厅</p>
+              <p class="card-subtitle">
+                显示 {{ filteredCount }} / {{ totalFilteredCount }} 家餐厅
+                <el-tag size="small" type="info" style="margin-left: 8px">{{ displayRatio }}%比例</el-tag>
+              </p>
             </div>
             <div class="map-legend">
               <div class="legend-item">
@@ -140,7 +161,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useDataStore } from '@/store/data'
-import { RefreshLeft } from '@element-plus/icons-vue'
+import { RefreshLeft, InfoFilled } from '@element-plus/icons-vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -164,11 +185,15 @@ let map = null
 let markersLayer = null
 const geojsonData = ref(null)
 const allRestaurants = ref([])
+const filteredRestaurants = ref([])
 
 // 筛选条件
 const selectedStars = ref([1, 2, 3])
 const selectedRegion = ref(null)
 const availableRegions = ref([])
+
+// 新增：显示比例控制
+const displayRatio = ref(100)
 
 // 统计数据
 const geoStats = ref({
@@ -180,10 +205,12 @@ const geoStats = ref({
 
 const regionStats = ref([])
 
-// 计算筛选后的数量
+// 计算筛选后的数量和符合条件的总数量
 const filteredCount = computed(() => {
-  if (!allRestaurants.value.length) return 0
-  
+  return filteredRestaurants.value.length
+})
+
+const totalFilteredCount = computed(() => {
   return allRestaurants.value.filter(restaurant => {
     const starMatch = selectedStars.value.includes(restaurant.stars)
     const regionMatch = !selectedRegion.value || restaurant.region === selectedRegion.value
@@ -194,31 +221,116 @@ const filteredCount = computed(() => {
 // 获取地图数据
 const fetchMapData = async () => {
   try {
+    loading.value = true
     await dataStore.fetchGeoJSON()
     geojsonData.value = dataStore.geojson
     
     // 从GeoJSON提取餐厅数据
     if (geojsonData.value && geojsonData.value.features) {
-      allRestaurants.value = geojsonData.value.features.map(feature => ({
-        ...feature.properties,
-        coordinates: feature.geometry.coordinates
-      }))
+      allRestaurants.value = geojsonData.value.features.map(feature => {
+        const props = feature.properties
+        const coords = feature.geometry.coordinates
+        
+        return {
+          id: props.id,
+          name: props.name,
+          stars: Number(props.stars) || 0,
+          city: props.city,
+          region: props.region,
+          continent: props.continent,
+          cuisine: props.cuisine,
+          price: props.price,
+          latitude: coords[1], // GeoJSON格式是[经度,纬度]
+          longitude: coords[0],
+          year: props.year,
+          website: props.website || props.url
+        }
+      })
+      
+      console.log(`成功加载${allRestaurants.value.length}家餐厅数据`)
       
       // 提取可用地区
       const regions = [...new Set(allRestaurants.value.map(r => r.region).filter(Boolean))]
       availableRegions.value = regions.sort()
       
+      // 应用初始筛选和显示比例
+      applyFilters()
+      
       // 计算统计数据
       calculateStats()
+    } else {
+      console.error('无法获取地理数据或数据格式不正确')
     }
   } catch (error) {
     console.error('获取地图数据失败:', error)
+  } finally {
+    loading.value = false
   }
+}
+
+// 应用所有筛选条件和显示比例
+const applyFilters = () => {
+  // 先应用筛选条件
+  const tempFiltered = allRestaurants.value.filter(restaurant => {
+    const starMatch = selectedStars.value.includes(restaurant.stars)
+    const regionMatch = !selectedRegion.value || restaurant.region === selectedRegion.value
+    return starMatch && regionMatch
+  })
+  
+  // 再应用显示比例
+  if (displayRatio.value < 100) {
+    const count = Math.ceil(tempFiltered.length * (displayRatio.value / 100))
+    // 随机选择指定数量的餐厅，但保持分布的相对均匀性
+    // 先按地区和星级分组
+    const groupedByRegion = {}
+    tempFiltered.forEach(restaurant => {
+      const key = `${restaurant.region || '未知'}_${restaurant.stars}`
+      if (!groupedByRegion[key]) {
+        groupedByRegion[key] = []
+      }
+      groupedByRegion[key].push(restaurant)
+    })
+    
+    // 从每个分组中按比例选择餐厅
+    let selected = []
+    Object.values(groupedByRegion).forEach(group => {
+      const groupCount = Math.ceil(group.length * (displayRatio.value / 100))
+      const shuffled = [...group].sort(() => 0.5 - Math.random())
+      selected = [...selected, ...shuffled.slice(0, groupCount)]
+    })
+    
+    // 如果选择的总数超过了目标数量，再随机减少一些
+    if (selected.length > count) {
+      selected = selected.sort(() => 0.5 - Math.random()).slice(0, count)
+    }
+    
+    filteredRestaurants.value = selected
+  } else {
+    filteredRestaurants.value = tempFiltered
+  }
+}
+
+// 筛选标记
+const filterMarkers = () => {
+  applyFilters()
+  addRestaurantMarkers()
+}
+
+// 应用显示比例
+const applyDisplayRatio = () => {
+  applyFilters()
+  addRestaurantMarkers()
 }
 
 // 计算统计数据
 const calculateStats = () => {
   const restaurants = allRestaurants.value
+  
+  // 检查数据是否有效
+  if (!restaurants.length) {
+    console.warn('无法计算统计数据：没有加载餐厅数据')
+    return
+  }
   
   geoStats.value = {
     totalRestaurants: restaurants.length,
@@ -226,6 +338,8 @@ const calculateStats = () => {
     cities: [...new Set(restaurants.map(r => r.city).filter(Boolean))].length,
     continents: [...new Set(restaurants.map(r => r.continent).filter(Boolean))].length
   }
+  
+  console.log('地理统计数据:', geoStats.value)
   
   // 计算地区统计
   const regionMap = {}
@@ -272,21 +386,16 @@ const initMap = async () => {
 
 // 添加餐厅标记
 const addRestaurantMarkers = () => {
-  if (!markersLayer || !allRestaurants.value.length) return
+  if (!markersLayer) return
   
   // 清除现有标记
   markersLayer.clearLayers()
   
-  // 筛选餐厅
-  const filteredRestaurants = allRestaurants.value.filter(restaurant => {
-    const starMatch = selectedStars.value.includes(restaurant.stars)
-    const regionMatch = !selectedRegion.value || restaurant.region === selectedRegion.value
-    return starMatch && regionMatch && restaurant.latitude && restaurant.longitude
-  })
-  
   // 添加标记
-  filteredRestaurants.forEach(restaurant => {
-    const { latitude, longitude, stars, name, city, region, cuisine, price } = restaurant
+  filteredRestaurants.value.forEach(restaurant => {
+    const { latitude, longitude, stars, name, city, region, cuisine, price, website } = restaurant
+    
+    if (!latitude || !longitude) return
     
     // 根据星级选择颜色
     const getMarkerColor = (stars) => {
@@ -323,6 +432,9 @@ const addRestaurantMarkers = () => {
     const marker = L.marker([latitude, longitude], { icon: customIcon })
     
     // 创建弹出窗口内容
+    const websiteLink = website ? 
+      `<div style="margin-bottom: 8px;"><a href="${website}" target="_blank" style="color: #3182ce;">访问官网</a></div>` : '';
+    
     const popupContent = `
       <div style="min-width: 200px;">
         <h3 style="margin: 0 0 8px 0; color: #333;">${name}</h3>
@@ -330,12 +442,13 @@ const addRestaurantMarkers = () => {
           <strong>${stars}星米其林餐厅</strong>
         </div>
         <div style="margin-bottom: 4px;">
-          📍 ${city}, ${region}
+          📍 ${city || ''}${city && region ? ', ' : ''}${region || ''}
         </div>
         <div style="margin-bottom: 4px;">
           🍽️ ${cuisine || '未知菜系'}
         </div>
         ${price ? `<div style="margin-bottom: 4px;">💰 ${price}</div>` : ''}
+        ${websiteLink}
         <div style="font-size: 12px; color: #666; margin-top: 8px;">
           纬度: ${latitude.toFixed(4)}, 经度: ${longitude.toFixed(4)}
         </div>
@@ -347,22 +460,25 @@ const addRestaurantMarkers = () => {
   })
 }
 
-// 筛选标记
-const filterMarkers = () => {
-  addRestaurantMarkers()
-}
-
 // 重置筛选
 const resetFilters = () => {
   selectedStars.value = [1, 2, 3]
   selectedRegion.value = null
+  displayRatio.value = 100
   filterMarkers()
 }
 
 // 初始化
 onMounted(async () => {
-  await fetchMapData()
-  await initMap()
+  try {
+    console.log("开始加载地图数据...")
+    await fetchMapData()
+    console.log(`地图数据加载完成: 总共 ${allRestaurants.value.length} 家餐厅, 经过筛选后 ${filteredRestaurants.value.length} 家餐厅显示在地图上`)
+    await initMap()
+    console.log("地图初始化完成")
+  } catch (error) {
+    console.error("地图初始化失败:", error)
+  }
 })
 
 // 清理
@@ -409,6 +525,27 @@ onUnmounted(() => {
 .map-controls {
   .el-form-item {
     margin-bottom: 0;
+  }
+}
+
+/* 新增：显示比例控制样式 */
+.display-ratio-control {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+  
+  .control-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #4a5568;
+    
+    .el-icon {
+      color: #718096;
+      cursor: pointer;
+    }
   }
 }
 
@@ -495,41 +632,5 @@ onUnmounted(() => {
   .map-container-div {
     height: 400px;
   }
-
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
-  }
-}
-
-@media (max-width: 480px) {
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .map-controls {
-    .el-form {
-      flex-direction: column;
-      align-items: stretch;
-      
-      .el-form-item {
-        margin-bottom: 16px;
-      }
-    }
-  }
-}
-
-// 全局样式 - Leaflet相关
-:deep(.leaflet-popup-content) {
-  margin: 8px 12px !important;
-}
-
-:deep(.leaflet-popup-content-wrapper) {
-  border-radius: 8px !important;
-}
-
-:deep(.custom-marker) {
-  background: transparent !important;
-  border: none !important;
 }
 </style> 

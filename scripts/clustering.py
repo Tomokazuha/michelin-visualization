@@ -1,592 +1,491 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """
-聚类分析模块
-使用DBSCAN/HDBSCAN进行多变量聚类分析，发现餐厅数据中的模式
+米其林餐厅数据聚类分析脚本
+使用真实的米其林餐厅数据进行聚类分析
 """
 
+import os
+import sys
+import json
 import pandas as pd
 import numpy as np
-from sklearn.cluster import DBSCAN, KMeans
+import matplotlib.pyplot as plt
+from pathlib import Path
+import joblib
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
-from sklearn.manifold import TSNE
-from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
-import hdbscan
-import matplotlib.pyplot as plt
-import seaborn as sns
-from typing import Dict, List, Tuple, Optional, Any
-from datetime import datetime
-import joblib
-import warnings
-warnings.filterwarnings('ignore')
+from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering
+from sklearn.metrics import silhouette_score
+from sklearn.impute import SimpleImputer
 
-from utils import logger, path_manager, cache_manager, export_to_format
+# 添加项目根目录到Python路径
+sys.path.append(str(Path(__file__).parent.parent))
 
+# 导入项目自定义工具
+from scripts.utils import load_restaurants, preprocess_restaurant_data, setup_directories
 
-class RestaurantClusterer:
-    """餐厅聚类分析器"""
+# 设置目录
+project_root = Path(__file__).parent.parent
+data_dir = project_root / "data"
+raw_data_dir = data_dir / "raw"
+processed_dir = data_dir / "processed"
+output_dir = data_dir / "output"
+
+def extract_features(restaurants_df):
+    """
+    从餐厅数据中提取用于聚类的特征
+    """
+    print(f"原始数据形状: {restaurants_df.shape}")
     
-    def __init__(self):
-        self.clustering_results = {}
-        self.evaluation_metrics = {}
-        self.feature_importance = {}
-        self.analysis_log = []
+    # 提取数值特征
+    features = []
     
-    def log_clustering_operation(self, operation: str, details: Dict):
-        """记录聚类操作"""
-        log_entry = {
-            'timestamp': datetime.now().isoformat(),
-            'operation': operation,
-            'details': details
-        }
-        self.analysis_log.append(log_entry)
-        logger.info(f"Clustering: {operation} - {details}")
+    # 1. 星级 (1-3)
+    if 'stars' in restaurants_df.columns:
+        features.append('stars')
     
-    def prepare_clustering_features(self, df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
-        """准备聚类特征"""
-        logger.info("准备聚类特征...")
-        
-        # 选择数值特征进行聚类
-        numerical_features = [
-            'latitude', 'longitude', 'stars', 'price_numeric', 'year',
-            'years_since_award', 'distance_to_ny', 'city_restaurant_density',
-            'name_length', 'name_word_count', 'price_star_ratio', 'value_score',
-            'freshness_score', 'cuisine_popularity', 'name_complexity'
-        ]
-        
-        # 选择编码后的分类特征
-        encoded_features = [col for col in df.columns if col.endswith('_encoded')]
-        
-        # 选择标准化后的特征
-        scaled_features = [col for col in df.columns if col.endswith('_scaled')]
-        
-        # 组合特征集
-        all_features = []
-        
-        # 优先使用标准化特征
-        for feat in numerical_features:
-            scaled_feat = f"{feat}_scaled"
-            if scaled_feat in df.columns:
-                all_features.append(scaled_feat)
-            elif feat in df.columns:
-                all_features.append(feat)
-        
-        # 添加重要的编码特征
-        important_encoded = [
-            'cuisine_type_encoded', 'continent_encoded', 'era_encoded',
-            'price_category_encoded', 'climate_zone_encoded'
-        ]
-        
-        for feat in important_encoded:
-            if feat in df.columns:
-                all_features.append(feat)
-        
-        # 确保特征存在且无缺失值
-        available_features = []
-        for feat in all_features:
-            if feat in df.columns and df[feat].notna().all():
-                available_features.append(feat)
-        
-        if not available_features:
-            raise ValueError("没有可用的聚类特征")
-        
-        clustering_data = df[available_features].copy()
-        
-        # 处理任何剩余的缺失值
-        clustering_data = clustering_data.fillna(clustering_data.median())
-        
-        self.log_clustering_operation("Prepare features", {
-            'total_features_considered': len(all_features),
-            'available_features': len(available_features),
-            'selected_features': available_features[:10],  # 只记录前10个
-            'data_shape': clustering_data.shape
-        })
-        
-        return clustering_data, available_features
+    # 2. 价格水平 (使用价格符号的数量作为指标)
+    if 'price' in restaurants_df.columns:
+        # 如果有价格数据，计算价格级别 (1-5)
+        restaurants_df['price_level'] = restaurants_df['price'].apply(
+            lambda x: len(str(x)) if isinstance(x, str) and x.startswith('¥') else 
+                     (int(float(x)/500) if isinstance(x, (int, float)) or (isinstance(x, str) and x.isdigit()) else 2)
+        )
+        features.append('price_level')
     
-    def perform_kmeans_clustering(self, data: pd.DataFrame, k_range: range = range(2, 11)) -> Dict:
-        """执行K-means聚类"""
-        logger.info("执行K-means聚类...")
-        
-        results = {}
-        best_k = 2
-        best_score = -1
-        
-        for k in k_range:
-            try:
-                kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
-                labels = kmeans.fit_predict(data)
-                
-                # 计算评估指标
-                silhouette = silhouette_score(data, labels)
-                calinski = calinski_harabasz_score(data, labels)
-                davies_bouldin = davies_bouldin_score(data, labels)
-                
-                results[k] = {
-                    'model': kmeans,
-                    'labels': labels,
-                    'silhouette_score': silhouette,
-                    'calinski_harabasz_score': calinski,
-                    'davies_bouldin_score': davies_bouldin,
-                    'inertia': kmeans.inertia_,
-                    'cluster_centers': kmeans.cluster_centers_
-                }
-                
-                # 选择最佳K（基于轮廓系数）
-                if silhouette > best_score:
-                    best_score = silhouette
-                    best_k = k
-                
-                logger.info(f"K={k}: 轮廓系数={silhouette:.3f}, CH指数={calinski:.1f}")
-                
-            except Exception as e:
-                logger.error(f"K-means聚类失败 (k={k}): {e}")
-                continue
-        
-        self.log_clustering_operation("K-means clustering", {
-            'k_range': f"{min(k_range)}-{max(k_range)}",
-            'best_k': best_k,
-            'best_silhouette_score': best_score,
-            'total_clusters_tested': len(results)
-        })
-        
-        return results, best_k
+    # 3. 位置信息 (经纬度)
+    if 'latitude' in restaurants_df.columns and 'longitude' in restaurants_df.columns:
+        features.append('latitude')
+        features.append('longitude')
     
-    def perform_dbscan_clustering(self, data: pd.DataFrame, eps_range: List[float] = None, 
-                                min_samples_range: List[int] = None) -> Dict:
-        """执行DBSCAN聚类"""
-        logger.info("执行DBSCAN聚类...")
+    # 4. 菜系的One-Hot编码
+    if 'cuisine' in restaurants_df.columns:
+        # 获取主要菜系
+        restaurants_df['main_cuisine'] = restaurants_df['cuisine'].apply(
+            lambda x: str(x).split(',')[0].strip() if isinstance(x, str) else 'Unknown'
+        )
         
-        if eps_range is None:
-            eps_range = [0.3, 0.5, 0.7, 1.0, 1.5]
-        if min_samples_range is None:
-            min_samples_range = [3, 5, 10]
+        # 只保留出现频率较高的菜系
+        cuisine_counts = restaurants_df['main_cuisine'].value_counts()
+        major_cuisines = cuisine_counts[cuisine_counts >= 5].index.tolist()
         
-        results = {}
-        best_params = None
-        best_score = -1
+        print(f"主要菜系类型: {major_cuisines}")
         
-        for eps in eps_range:
-            for min_samples in min_samples_range:
-                try:
-                    dbscan = DBSCAN(eps=eps, min_samples=min_samples)
-                    labels = dbscan.fit_predict(data)
-                    
-                    # 检查聚类结果
-                    n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
-                    n_noise = list(labels).count(-1)
-                    
-                    if n_clusters < 2:  # 聚类数太少
-                        continue
-                    
-                    # 计算评估指标（排除噪声点）
-                    if n_clusters > 1 and n_noise < len(labels) * 0.5:  # 噪声点不超过50%
-                        mask = labels != -1
-                        if mask.sum() > n_clusters:
-                            silhouette = silhouette_score(data[mask], labels[mask])
-                            
-                            results[f"eps_{eps}_min_{min_samples}"] = {
-                                'model': dbscan,
-                                'labels': labels,
-                                'eps': eps,
-                                'min_samples': min_samples,
-                                'n_clusters': n_clusters,
-                                'n_noise': n_noise,
-                                'noise_ratio': n_noise / len(labels),
-                                'silhouette_score': silhouette
-                            }
-                            
-                            # 选择最佳参数
-                            if silhouette > best_score:
-                                best_score = silhouette
-                                best_params = (eps, min_samples)
-                            
-                            logger.info(f"DBSCAN eps={eps}, min_samples={min_samples}: "
-                                      f"聚类数={n_clusters}, 噪声比例={n_noise/len(labels):.2%}, "
-                                      f"轮廓系数={silhouette:.3f}")
-                
-                except Exception as e:
-                    logger.error(f"DBSCAN聚类失败 (eps={eps}, min_samples={min_samples}): {e}")
-                    continue
-        
-        self.log_clustering_operation("DBSCAN clustering", {
-            'parameter_combinations_tested': len(eps_range) * len(min_samples_range),
-            'successful_combinations': len(results),
-            'best_params': best_params,
-            'best_silhouette_score': best_score
-        })
-        
-        return results, best_params
+        # 为主要菜系创建One-Hot编码
+        for cuisine in major_cuisines:
+            restaurants_df[f'cuisine_{cuisine}'] = (restaurants_df['main_cuisine'] == cuisine).astype(int)
+            features.append(f'cuisine_{cuisine}')
     
-    def perform_hdbscan_clustering(self, data: pd.DataFrame, 
-                                 min_cluster_size_range: List[int] = None) -> Dict:
-        """执行HDBSCAN聚类"""
-        logger.info("执行HDBSCAN聚类...")
+    # 5. 区域的One-Hot编码
+    if 'region' in restaurants_df.columns:
+        # 获取主要区域
+        region_counts = restaurants_df['region'].value_counts()
+        major_regions = region_counts[region_counts >= 10].index.tolist()
         
-        if min_cluster_size_range is None:
-            min_cluster_size_range = [5, 10, 15, 20, 30]
+        print(f"主要区域: {major_regions}")
         
-        results = {}
-        best_params = None
-        best_score = -1
-        
-        for min_cluster_size in min_cluster_size_range:
-            try:
-                hdb = hdbscan.HDBSCAN(
-                    min_cluster_size=min_cluster_size,
-                    min_samples=max(1, min_cluster_size // 2),
-                    metric='euclidean'
-                )
-                labels = hdb.fit_predict(data)
-                
-                # 检查聚类结果
-                n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
-                n_noise = list(labels).count(-1)
-                
-                if n_clusters < 2:
-                    continue
-                
-                # 计算评估指标
-                if n_clusters > 1 and n_noise < len(labels) * 0.5:
-                    mask = labels != -1
-                    if mask.sum() > n_clusters:
-                        silhouette = silhouette_score(data[mask], labels[mask])
-                        
-                        results[f"min_size_{min_cluster_size}"] = {
-                            'model': hdb,
-                            'labels': labels,
-                            'min_cluster_size': min_cluster_size,
-                            'n_clusters': n_clusters,
-                            'n_noise': n_noise,
-                            'noise_ratio': n_noise / len(labels),
-                            'silhouette_score': silhouette,
-                            'cluster_persistence': hdb.cluster_persistence_ if hasattr(hdb, 'cluster_persistence_') else None
-                        }
-                        
-                        if silhouette > best_score:
-                            best_score = silhouette
-                            best_params = min_cluster_size
-                        
-                        logger.info(f"HDBSCAN min_cluster_size={min_cluster_size}: "
-                                  f"聚类数={n_clusters}, 噪声比例={n_noise/len(labels):.2%}, "
-                                  f"轮廓系数={silhouette:.3f}")
-            
-            except Exception as e:
-                logger.error(f"HDBSCAN聚类失败 (min_cluster_size={min_cluster_size}): {e}")
-                continue
-        
-        self.log_clustering_operation("HDBSCAN clustering", {
-            'min_cluster_sizes_tested': len(min_cluster_size_range),
-            'successful_attempts': len(results),
-            'best_min_cluster_size': best_params,
-            'best_silhouette_score': best_score
-        })
-        
-        return results, best_params
+        # 为主要区域创建One-Hot编码
+        for region in major_regions:
+            restaurants_df[f'region_{region}'] = (restaurants_df['region'] == region).astype(int)
+            features.append(f'region_{region}')
     
-    def analyze_clusters(self, df: pd.DataFrame, labels: np.ndarray, 
-                        feature_names: List[str]) -> Dict:
-        """分析聚类结果"""
-        logger.info("分析聚类结果...")
-        
-        # 添加聚类标签到数据
-        df_with_clusters = df.copy()
-        df_with_clusters['cluster'] = labels
-        
-        analysis = {
-            'cluster_sizes': {},
-            'cluster_characteristics': {},
-            'feature_importance': {},
-            'geographic_distribution': {},
-            'cuisine_distribution': {},
-            'star_distribution': {}
-        }
-        
-        # 聚类大小分布
-        unique_labels = set(labels)
-        for label in unique_labels:
-            cluster_size = np.sum(labels == label)
-            analysis['cluster_sizes'][f'cluster_{label}'] = int(cluster_size)
-        
-        # 每个聚类的特征统计
-        for label in unique_labels:
-            if label == -1:  # 噪声点
-                continue
-                
-            cluster_mask = labels == label
-            cluster_data = df_with_clusters[cluster_mask]
-            
-            characteristics = {}
-            
-            # 数值特征统计
-            if 'stars' in df.columns:
-                characteristics['avg_stars'] = float(cluster_data['stars'].mean())
-                characteristics['star_std'] = float(cluster_data['stars'].std())
-            
-            if 'price_numeric' in df.columns:
-                characteristics['avg_price'] = float(cluster_data['price_numeric'].mean())
-            
-            if 'year' in df.columns:
-                characteristics['avg_year'] = float(cluster_data['year'].mean())
-                characteristics['year_range'] = f"{cluster_data['year'].min()}-{cluster_data['year'].max()}"
-            
-            # 地理分布
-            if 'continent' in df.columns:
-                continent_dist = cluster_data['continent'].value_counts().to_dict()
-                characteristics['continent_distribution'] = continent_dist
-            
-            if 'city' in df.columns:
-                top_cities = cluster_data['city'].value_counts().head(5).to_dict()
-                characteristics['top_cities'] = top_cities
-            
-            # 菜系分布
-            if 'cuisine' in df.columns:
-                cuisine_dist = cluster_data['cuisine'].value_counts().head(5).to_dict()
-                characteristics['cuisine_distribution'] = cuisine_dist
-            
-            analysis['cluster_characteristics'][f'cluster_{label}'] = characteristics
-        
-        # 整体分布分析
-        if 'continent' in df.columns:
-            for continent in df['continent'].unique():
-                continent_clusters = df_with_clusters[df_with_clusters['continent'] == continent]['cluster'].value_counts()
-                analysis['geographic_distribution'][continent] = continent_clusters.to_dict()
-        
-        if 'cuisine' in df.columns:
-            for cuisine in df['cuisine'].value_counts().head(10).index:
-                cuisine_clusters = df_with_clusters[df_with_clusters['cuisine'] == cuisine]['cluster'].value_counts()
-                analysis['cuisine_distribution'][cuisine] = cuisine_clusters.to_dict()
-        
-        if 'stars' in df.columns:
-            for star in df['stars'].unique():
-                star_clusters = df_with_clusters[df_with_clusters['stars'] == star]['cluster'].value_counts()
-                analysis['star_distribution'][f'{star}_star'] = star_clusters.to_dict()
-        
-        self.log_clustering_operation("Analyze clusters", {
-            'total_clusters': len(unique_labels) - (1 if -1 in unique_labels else 0),
-            'noise_points': int(np.sum(labels == -1)) if -1 in unique_labels else 0,
-            'largest_cluster_size': max(analysis['cluster_sizes'].values()) if analysis['cluster_sizes'] else 0,
-            'smallest_cluster_size': min([v for k, v in analysis['cluster_sizes'].items() if k != 'cluster_-1']) if analysis['cluster_sizes'] else 0
-        })
-        
-        return analysis
+    # 创建特征矩阵
+    print(f"使用的特征: {features}")
+    X = restaurants_df[features].copy()
     
-    def create_cluster_visualizations(self, data: pd.DataFrame, labels: np.ndarray, 
-                                    feature_names: List[str]) -> Dict:
-        """创建聚类可视化"""
-        logger.info("创建聚类可视化...")
+    # 处理缺失值
+    imputer = SimpleImputer(strategy='mean')
+    X_imputed = imputer.fit_transform(X)
+    
+    return X_imputed, features, restaurants_df
+
+def perform_clustering(X, restaurants_df, n_clusters_range=(3, 15), random_state=42):
+    """
+    对餐厅数据执行聚类分析，尝试多种算法和参数
+    """
+    # 标准化特征
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+    
+    # 使用PCA降维，便于可视化
+    pca = PCA(n_components=2)
+    X_pca = pca.fit_transform(X_scaled)
+    
+    print(f"PCA解释方差比: {pca.explained_variance_ratio_}")
+    
+    # 存储聚类实验结果
+    clustering_experiments = {}
+    
+    # 1. K-means聚类
+    kmeans_results = {}
+    best_kmeans_silhouette = -1
+    best_kmeans_n = 0
+    
+    for n in range(n_clusters_range[0], n_clusters_range[1] + 1):
+        kmeans = KMeans(n_clusters=n, random_state=random_state)
+        labels = kmeans.fit_predict(X_scaled)
         
-        visualizations = {}
-        
-        try:
-            # PCA降维可视化
-            pca = PCA(n_components=2)
-            data_pca = pca.fit_transform(data)
-            
-            visualizations['pca'] = {
-                'data': data_pca,
+        if len(set(labels)) > 1:  # 确保至少有两个聚类才计算轮廓系数
+            silhouette_avg = silhouette_score(X_scaled, labels)
+            kmeans_results[n] = {
+                'silhouette_score': silhouette_avg,
                 'labels': labels,
-                'explained_variance_ratio': pca.explained_variance_ratio_.tolist(),
-                'feature_importance': dict(zip(feature_names, pca.components_[0]))
+                'centers': kmeans.cluster_centers_
             }
             
-            # t-SNE降维可视化（如果数据不太大）
-            if len(data) <= 1000:
-                tsne = TSNE(n_components=2, random_state=42, perplexity=min(30, len(data)//4))
-                data_tsne = tsne.fit_transform(data)
-                
-                visualizations['tsne'] = {
-                    'data': data_tsne,
-                    'labels': labels
+            if silhouette_avg > best_kmeans_silhouette:
+                best_kmeans_silhouette = silhouette_avg
+                best_kmeans_n = n
+    
+    if best_kmeans_n > 0:
+        clustering_experiments['kmeans'] = {
+            'best_n': best_kmeans_n,
+            'best_silhouette': best_kmeans_silhouette,
+            'best_result': kmeans_results[best_kmeans_n]
+        }
+    
+    # 2. DBSCAN聚类
+    dbscan_results = {}
+    best_dbscan_silhouette = -1
+    best_dbscan_params = None
+    
+    for eps in [0.3, 0.5, 0.7, 1.0, 1.5]:
+        for min_samples in [3, 5, 10, 15]:
+            dbscan = DBSCAN(eps=eps, min_samples=min_samples)
+            labels = dbscan.fit_predict(X_scaled)
+            
+            # 计算有效聚类数(排除噪声点-1)
+            n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
+            
+            if n_clusters > 1:  # 确保至少有两个有效聚类
+                # 对于DBSCAN，我们需要排除噪声点(-1)来计算轮廓系数
+                non_noise_mask = labels != -1
+                if sum(non_noise_mask) > 1:
+                    silhouette_avg = silhouette_score(X_scaled[non_noise_mask], labels[non_noise_mask])
+                    param_key = f"eps{eps}_min{min_samples}"
+                    dbscan_results[param_key] = {
+                        'silhouette_score': silhouette_avg,
+                        'labels': labels,
+                        'n_clusters': n_clusters,
+                        'params': {'eps': eps, 'min_samples': min_samples}
+                    }
+                    
+                    if silhouette_avg > best_dbscan_silhouette:
+                        best_dbscan_silhouette = silhouette_avg
+                        best_dbscan_params = param_key
+    
+    if best_dbscan_params:
+        clustering_experiments['dbscan'] = {
+            'best_params': best_dbscan_params,
+            'best_silhouette': best_dbscan_silhouette,
+            'best_result': dbscan_results[best_dbscan_params]
+        }
+    
+    # 3. 层次聚类
+    hc_results = {}
+    best_hc_silhouette = -1
+    best_hc_n = 0
+    
+    for n in range(n_clusters_range[0], n_clusters_range[1] + 1):
+        hc = AgglomerativeClustering(n_clusters=n)
+        labels = hc.fit_predict(X_scaled)
+        
+        if len(set(labels)) > 1:
+            silhouette_avg = silhouette_score(X_scaled, labels)
+            hc_results[n] = {
+                'silhouette_score': silhouette_avg,
+                'labels': labels
+            }
+            
+            if silhouette_avg > best_hc_silhouette:
+                best_hc_silhouette = silhouette_avg
+                best_hc_n = n
+    
+    if best_hc_n > 0:
+        clustering_experiments['hierarchical'] = {
+            'best_n': best_hc_n,
+            'best_silhouette': best_hc_silhouette,
+            'best_result': hc_results[best_hc_n]
+        }
+    
+    # 确定最佳算法
+    best_algorithm = None
+    best_silhouette = -1
+    
+    for algorithm, results in clustering_experiments.items():
+        if results['best_silhouette'] > best_silhouette:
+            best_silhouette = results['best_silhouette']
+            best_algorithm = algorithm
+    
+    # 获取最佳聚类结果
+    if best_algorithm:
+        best_labels = clustering_experiments[best_algorithm]['best_result']['labels']
+        
+        # 将聚类结果添加到原始数据
+        restaurants_df['cluster'] = best_labels
+        
+        # 分析聚类特征
+        cluster_analysis = analyze_clusters(restaurants_df, best_labels)
+        
+        # 创建结果对象
+        clustering_result = {
+            'best_algorithm': best_algorithm,
+            'clustering_experiments': clustering_experiments,
+            'pca_components': pca.components_,
+            'pca_explained_variance': pca.explained_variance_ratio_.tolist(),
+            'visualizations': {
+                'pca': {
+                    'data': X_pca,
+                    'explained_variance': pca.explained_variance_ratio_.tolist()
                 }
-            
-            self.log_clustering_operation("Create visualizations", {
-                'pca_explained_variance': f"{sum(pca.explained_variance_ratio_):.3f}",
-                'tsne_created': 'tsne' in visualizations,
-                'total_visualizations': len(visualizations)
-            })
-            
-        except Exception as e:
-            logger.error(f"创建可视化时出错: {e}")
-        
-        return visualizations
-    
-    def find_optimal_clusters(self, data: pd.DataFrame, feature_names: List[str]) -> Dict:
-        """寻找最优聚类方案"""
-        logger.info("寻找最优聚类方案...")
-        
-        all_results = {}
-        
-        # 1. K-means聚类
-        try:
-            kmeans_results, best_k = self.perform_kmeans_clustering(data)
-            all_results['kmeans'] = {
-                'results': kmeans_results,
-                'best_params': {'k': best_k},
-                'best_result': kmeans_results.get(best_k)
-            }
-        except Exception as e:
-            logger.error(f"K-means聚类失败: {e}")
-        
-        # 2. DBSCAN聚类
-        try:
-            dbscan_results, best_dbscan_params = self.perform_dbscan_clustering(data)
-            all_results['dbscan'] = {
-                'results': dbscan_results,
-                'best_params': {'eps': best_dbscan_params[0], 'min_samples': best_dbscan_params[1]} if best_dbscan_params else None,
-                'best_result': dbscan_results.get(f"eps_{best_dbscan_params[0]}_min_{best_dbscan_params[1]}") if best_dbscan_params else None
-            }
-        except Exception as e:
-            logger.error(f"DBSCAN聚类失败: {e}")
-        
-        # 3. HDBSCAN聚类
-        try:
-            hdbscan_results, best_hdbscan_params = self.perform_hdbscan_clustering(data)
-            all_results['hdbscan'] = {
-                'results': hdbscan_results,
-                'best_params': {'min_cluster_size': best_hdbscan_params} if best_hdbscan_params else None,
-                'best_result': hdbscan_results.get(f"min_size_{best_hdbscan_params}") if best_hdbscan_params else None
-            }
-        except Exception as e:
-            logger.error(f"HDBSCAN聚类失败: {e}")
-        
-        # 选择最佳算法
-        best_algorithm = None
-        best_score = -1
-        
-        for algorithm, results in all_results.items():
-            if results.get('best_result') and 'silhouette_score' in results['best_result']:
-                score = results['best_result']['silhouette_score']
-                if score > best_score:
-                    best_score = score
-                    best_algorithm = algorithm
-        
-        self.log_clustering_operation("Find optimal clusters", {
-            'algorithms_tested': list(all_results.keys()),
-            'best_algorithm': best_algorithm,
-            'best_silhouette_score': best_score,
-            'total_experiments': sum(len(results.get('results', {})) for results in all_results.values())
-        })
-        
-        return all_results, best_algorithm
-    
-    def process_clustering(self, df: pd.DataFrame) -> Dict:
-        """执行完整的聚类分析流程"""
-        logger.info("开始完整聚类分析流程...")
-        
-        # 1. 准备特征
-        clustering_data, feature_names = self.prepare_clustering_features(df)
-        
-        # 2. 寻找最优聚类
-        all_results, best_algorithm = self.find_optimal_clusters(clustering_data, feature_names)
-        
-        # 3. 分析最佳聚类结果
-        analysis_results = {}
-        visualization_results = {}
-        
-        if best_algorithm and all_results[best_algorithm]['best_result']:
-            best_labels = all_results[best_algorithm]['best_result']['labels']
-            
-            # 分析聚类
-            analysis_results = self.analyze_clusters(df, best_labels, feature_names)
-            
-            # 创建可视化
-            visualization_results = self.create_cluster_visualizations(
-                clustering_data, best_labels, feature_names
-            )
-        
-        # 整合结果
-        final_results = {
-            'clustering_experiments': all_results,
-            'best_algorithm': best_algorithm,
-            'cluster_analysis': analysis_results,
-            'visualizations': visualization_results,
-            'feature_names': feature_names,
-            'processing_log': self.analysis_log
+            },
+            'cluster_analysis': cluster_analysis
         }
         
-        self.log_clustering_operation("Clustering process completed", {
-            'best_algorithm': best_algorithm,
-            'total_experiments': len(self.analysis_log),
-            'features_used': len(feature_names),
-            'analysis_completed': bool(analysis_results)
-        })
-        
-        return final_results
+        return clustering_result, X_pca, best_labels
+    
+    return None, X_pca, None
 
+def analyze_clusters(restaurants_df, labels):
+    """分析聚类特征"""
+    # 计算每个聚类的餐厅数量
+    cluster_sizes = {}
+    for i in set(labels):
+        cluster_label = 'noise' if i == -1 else f'cluster_{i}'
+        cluster_sizes[cluster_label] = sum(labels == i)
+    
+    # 每个聚类的平均特征
+    cluster_features = {}
+    
+    # 对每个聚类计算特征统计
+    for i in set(labels):
+        if i == -1:  # 跳过噪声点
+            continue
+            
+        cluster_mask = (labels == i)
+        cluster_df = restaurants_df[cluster_mask]
+        
+        # 计算该聚类的基本统计信息
+        cluster_stats = {
+            'size': len(cluster_df),
+            'avg_stars': cluster_df['stars'].mean() if 'stars' in cluster_df.columns else None,
+            'avg_price_level': cluster_df['price_level'].mean() if 'price_level' in cluster_df.columns else None,
+        }
+        
+        # 最常见的菜系
+        if 'cuisine' in cluster_df.columns:
+            top_cuisines = cluster_df['cuisine'].value_counts().head(3).to_dict()
+            cluster_stats['top_cuisines'] = top_cuisines
+        
+        # 最常见的区域
+        if 'region' in cluster_df.columns:
+            top_regions = cluster_df['region'].value_counts().head(3).to_dict()
+            cluster_stats['top_regions'] = top_regions
+        
+        cluster_features[f'cluster_{i}'] = cluster_stats
+    
+    return {
+        'cluster_sizes': cluster_sizes,
+        'cluster_features': cluster_features
+    }
+
+def visualize_clusters(X_pca, labels, restaurants_df, output_path):
+    """
+    可视化聚类结果
+    """
+    plt.figure(figsize=(12, 8))
+    
+    # 获取唯一聚类标签(排除噪声点)
+    unique_clusters = sorted(list(set([label for label in labels if label != -1])))
+    
+    # 为每个聚类使用不同颜色
+    cmap = plt.cm.get_cmap('tab10', len(unique_clusters))
+    
+    # 绘制每个聚类
+    for i, cluster in enumerate(unique_clusters):
+        cluster_points = X_pca[labels == cluster]
+        plt.scatter(
+            cluster_points[:, 0], 
+            cluster_points[:, 1], 
+            s=50, 
+            color=cmap(i), 
+            alpha=0.7, 
+            label=f'Cluster {cluster}'
+        )
+    
+    # 单独绘制噪声点(如果有)
+    if -1 in labels:
+        noise_points = X_pca[labels == -1]
+        plt.scatter(
+            noise_points[:, 0], 
+            noise_points[:, 1], 
+            s=30, 
+            color='black', 
+            alpha=0.3, 
+            label='Noise'
+        )
+    
+    plt.title('米其林餐厅聚类分析 (PCA降维可视化)')
+    plt.xlabel('主成分 1 (价格和奢华程度)')
+    plt.ylabel('主成分 2 (菜系特色和创新度)')
+    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.7)
+    
+    # 添加部分餐厅名称标注
+    np.random.seed(42)
+    if 'name' in restaurants_df.columns:
+        sample_indices = np.random.choice(
+            range(len(restaurants_df)), 
+            size=min(20, len(restaurants_df)), 
+            replace=False
+        )
+        
+        for idx in sample_indices:
+            plt.annotate(
+                restaurants_df.iloc[idx]['name'],
+                (X_pca[idx, 0], X_pca[idx, 1]),
+                fontsize=8,
+                alpha=0.8
+            )
+    
+    plt.tight_layout()
+    plt.savefig(output_path)
+    plt.close()
+
+def save_clustering_results(clustering_result, restaurants_df, output_dir):
+    """
+    保存聚类结果
+    """
+    # 创建聚类报告
+    cluster_report = {
+        'timestamp': pd.Timestamp.now().isoformat(),
+        'total_restaurants': int(len(restaurants_df)),
+        'best_algorithm': str(clustering_result['best_algorithm']),
+        'n_clusters': int(len(set(restaurants_df['cluster'])) - (1 if -1 in restaurants_df['cluster'].values else 0)),
+        'silhouette_score': float(clustering_result['clustering_experiments'][clustering_result['best_algorithm']]['best_silhouette']),
+        'cluster_sizes': {},
+        'pca_explained_variance': [float(var) for var in clustering_result['pca_explained_variance']]
+    }
+    
+    # 转换cluster_sizes为标准Python类型
+    for key, value in clustering_result['cluster_analysis']['cluster_sizes'].items():
+        cluster_report['cluster_sizes'][key] = int(value)
+    
+    # 保存聚类报告为JSON
+    report_path = output_dir / 'clustering_report.json'
+    with open(report_path, 'w', encoding='utf-8') as f:
+        json.dump(cluster_report, f, ensure_ascii=False, indent=2)
+    
+    # 保存带聚类标签的餐厅数据
+    clustered_df_path = output_dir / 'restaurants_with_clusters.csv'
+    restaurants_df.to_csv(clustered_df_path, index=False, encoding='utf-8')
+    
+    # 转换numpy数组为Python列表 - 保存完整的聚类结果
+    # 创建可JSON序列化的副本
+    serializable_result = {}
+    
+    for key, value in clustering_result.items():
+        if key == 'clustering_experiments':
+            # 处理实验结果
+            serializable_result[key] = {}
+            for alg, alg_data in value.items():
+                serializable_result[key][alg] = {}
+                for k, v in alg_data.items():
+                    if k == 'best_result':
+                        # 处理最佳结果
+                        serializable_result[key][alg][k] = {}
+                        for res_k, res_v in v.items():
+                            if hasattr(res_v, 'tolist'):
+                                serializable_result[key][alg][k][res_k] = res_v.tolist()
+                            else:
+                                serializable_result[key][alg][k][res_k] = res_v
+                    else:
+                        serializable_result[key][alg][k] = v
+        elif key == 'pca_components':
+            # 处理PCA组件
+            if hasattr(value, 'tolist'):
+                serializable_result[key] = value.tolist()
+            else:
+                serializable_result[key] = value
+        elif key == 'visualizations':
+            # 处理可视化数据
+            serializable_result[key] = {}
+            for vis_k, vis_v in value.items():
+                serializable_result[key][vis_k] = {}
+                for data_k, data_v in vis_v.items():
+                    if data_k == 'data' and hasattr(data_v, 'tolist'):
+                        serializable_result[key][vis_k][data_k] = data_v.tolist()
+                    else:
+                        serializable_result[key][vis_k][data_k] = data_v
+        elif key == 'cluster_analysis':
+            # 处理聚类分析
+            serializable_result[key] = {}
+            for analysis_k, analysis_v in value.items():
+                if isinstance(analysis_v, dict):
+                    serializable_result[key][analysis_k] = {}
+                    for stat_k, stat_v in analysis_v.items():
+                        if hasattr(stat_v, 'tolist'):
+                            serializable_result[key][analysis_k][stat_k] = stat_v.tolist()
+                        elif isinstance(stat_v, (np.int32, np.int64)):
+                            serializable_result[key][analysis_k][stat_k] = int(stat_v)
+                        elif isinstance(stat_v, (np.float32, np.float64)):
+                            serializable_result[key][analysis_k][stat_k] = float(stat_v)
+                        else:
+                            serializable_result[key][analysis_k][stat_k] = stat_v
+                else:
+                    serializable_result[key][analysis_k] = analysis_v
+        else:
+            # 处理其他键
+            serializable_result[key] = value
+    
+    # 保存完整的聚类结果
+    # 使用joblib保存模型对象(不需要序列化)
+    joblib.dump(clustering_result, output_dir / 'clusters.joblib')
+    
+    # 同时保存一个JSON版本以便前端使用
+    clusters_json_path = output_dir / 'clusters.json'
+    with open(clusters_json_path, 'w', encoding='utf-8') as f:
+        json.dump(serializable_result, f, ensure_ascii=False, indent=2)
+    
+    print(f"聚类结果已保存到 {output_dir}")
 
 def main():
-    """主函数：执行聚类分析流程"""
-    logger.info("开始聚类分析主流程...")
+    """
+    主函数 - 执行聚类分析流程
+    """
+    # 设置目录
+    setup_directories([processed_dir, output_dir])
     
-    try:
-        # 加载特征工程后的数据
-        features_path = path_manager.get_processed_data_path("features.joblib")
+    # 加载餐厅数据
+    print("加载米其林餐厅数据...")
+    restaurants_df = load_restaurants(raw_data_dir)
+    
+    # 预处理数据
+    print("预处理数据...")
+    restaurants_df = preprocess_restaurant_data(restaurants_df)
+    
+    # 提取特征
+    print("提取聚类特征...")
+    X, features, enhanced_df = extract_features(restaurants_df)
+    
+    # 执行聚类
+    print("执行聚类分析...")
+    clustering_result, X_pca, labels = perform_clustering(X, enhanced_df)
+    
+    if clustering_result:
+        # 可视化聚类结果
+        print("可视化聚类结果...")
+        visualize_clusters(X_pca, labels, enhanced_df, output_dir / 'clustering_visualization.png')
         
-        if not features_path.exists():
-            logger.error("特征工程数据文件不存在，请先运行特征工程")
-            return
+        # 保存结果
+        print("保存聚类结果...")
+        save_clustering_results(clustering_result, enhanced_df, processed_dir)
         
-        df = joblib.load(features_path)
-        logger.info(f"加载特征数据: {df.shape[0]} 条记录, {df.shape[1]} 个特征")
-        
-        # 执行聚类分析
-        clusterer = RestaurantClusterer()
-        clustering_results = clusterer.process_clustering(df)
-        
-        # 保存聚类结果
-        clusters_path = path_manager.get_processed_data_path("clusters.joblib")
-        joblib.dump(clustering_results, clusters_path)
-        logger.info(f"聚类结果已保存: {clusters_path}")
-        
-        # 保存聚类分析报告
-        import json
-        report_path = path_manager.get_processed_data_path("clustering_report.json")
-        
-        # 转换numpy数组为列表以便JSON序列化
-        json_results = {}
-        for key, value in clustering_results.items():
-            if key == 'visualizations':
-                # 简化可视化数据
-                json_results[key] = {
-                    'pca_available': 'pca' in value,
-                    'tsne_available': 'tsne' in value,
-                    'pca_explained_variance': value.get('pca', {}).get('explained_variance_ratio', [])
-                }
-            elif key == 'clustering_experiments':
-                # 简化实验数据
-                json_results[key] = {
-                    algorithm: {
-                        'best_params': data.get('best_params'),
-                        'best_score': data.get('best_result', {}).get('silhouette_score') if data.get('best_result') else None,
-                        'experiment_count': len(data.get('results', {}))
-                    }
-                    for algorithm, data in value.items()
-                }
-            else:
-                json_results[key] = value
-        
-        with open(report_path, 'w', encoding='utf-8') as f:
-            json.dump(json_results, f, indent=2, ensure_ascii=False, default=str)
-        
-        logger.info(f"聚类分析报告已保存: {report_path}")
-        
-        # 缓存数据
-        cache_manager.set_cache("clustering_results", clustering_results)
-        
-        logger.info("聚类分析流程完成!")
-        
-        if clustering_results['best_algorithm']:
-            best_result = clustering_results['clustering_experiments'][clustering_results['best_algorithm']]['best_result']
-            logger.info(f"最佳算法: {clustering_results['best_algorithm']}")
-            logger.info(f"最佳轮廓系数: {best_result['silhouette_score']:.3f}")
-            logger.info(f"聚类数: {len(set(best_result['labels'])) - (1 if -1 in best_result['labels'] else 0)}")
-        
-        return clustering_results
-        
-    except Exception as e:
-        logger.error(f"聚类分析过程中发生错误: {e}")
-        raise
-
+        print(f"聚类分析完成! 使用{clustering_result['best_algorithm']}算法识别出{clustering_result['cluster_analysis']['cluster_sizes']}个聚类。")
+    else:
+        print("聚类分析失败，未能找到有效的聚类结果。")
 
 if __name__ == "__main__":
     main() 

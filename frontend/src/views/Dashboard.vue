@@ -43,20 +43,25 @@
               <span class="ml-2">加载中...</span>
             </div>
             <div v-else-if="starDistribution" class="chart-container">
-              <div class="star-chart">
+              <div class="chart star-chart">
                 <div 
                   v-for="(count, star) in starDistribution" 
                   :key="star"
-                  class="star-item"
+                  class="chart-item star-item"
                 >
-                  <div class="star-label">{{ star }}星</div>
-                  <div class="star-bar">
-                    <div 
-                      class="star-fill" 
-                      :style="{ width: getPercentage(count, totalRestaurants) + '%' }"
-                    ></div>
+                  <div class="chart-label star-label">
+                    <span class="star-icon">{{ star }}</span>
+                    <span class="star-text">星</span>
                   </div>
-                  <div class="star-count">{{ count }}</div>
+                  <div class="chart-bar star-bar">
+                    <div 
+                      class="chart-fill star-fill" 
+                      :style="{ width: getMaxPercentage(count, maxStarValue, 70) + '%' }"
+                    >
+                      <span class="bar-value">{{ getPercentage(count, totalRestaurants) }}%</span>
+                    </div>
+                  </div>
+                  <div class="chart-count star-count">{{ count }}</div>
                 </div>
               </div>
             </div>
@@ -74,20 +79,24 @@
               <span class="ml-2">加载中...</span>
             </div>
             <div v-else-if="priceDistribution" class="chart-container">
-              <div class="price-chart">
+              <div class="chart price-chart">
                 <div 
-                  v-for="(count, price) in priceDistribution" 
+                  v-for="(count, price) in priceDistributionTranslated" 
                   :key="price"
-                  class="price-item"
+                  class="chart-item price-item"
                 >
-                  <div class="price-label">{{ price }}</div>
-                  <div class="price-bar">
-                    <div 
-                      class="price-fill" 
-                      :style="{ width: getPercentage(count, totalRestaurants) + '%' }"
-                    ></div>
+                  <div class="chart-label price-label" :title="getPriceOriginal(price)">
+                    {{ price }}
                   </div>
-                  <div class="price-count">{{ count }}</div>
+                  <div class="chart-bar price-bar">
+                    <div 
+                      class="chart-fill price-fill" 
+                      :style="{ width: getMaxPercentage(count, maxPriceValue, 70) + '%' }"
+                    >
+                      <span class="bar-value">{{ getPercentage(count, totalRestaurants) }}%</span>
+                    </div>
+                  </div>
+                  <div class="chart-count price-count">{{ count }}</div>
                 </div>
               </div>
             </div>
@@ -151,9 +160,61 @@ const starDistribution = computed(() => summary.value?.star_distribution)
 const priceDistribution = computed(() => summary.value?.price_distribution)
 const totalRestaurants = computed(() => summary.value?.total_restaurants || 0)
 
+// 计算最大值，用于控制条形图显示
+const maxStarValue = computed(() => {
+  if (!starDistribution.value) return 0
+  return Math.max(...Object.values(starDistribution.value))
+})
+
+const maxPriceValue = computed(() => {
+  if (!priceDistribution.value) return 0
+  return Math.max(...Object.values(priceDistribution.value))
+})
+
+// 翻译价格标签，解决长度不一致的问题
+const priceDistributionTranslated = computed(() => {
+  if (!priceDistribution.value) return {}
+  
+  const translations = {
+    'Budget': '经济',
+    'Moderate': '适中',
+    'Expensive': '高价',
+    'Very Expensive': '豪华',
+    'Luxury': '奢华',
+    'Unknown': '未知'
+  }
+  
+  const result = {}
+  Object.entries(priceDistribution.value).forEach(([key, value]) => {
+    result[translations[key] || key] = value
+  })
+  
+  return result
+})
+
+// 获取原始价格标签（用于悬停提示）
+const getPriceOriginal = (translatedPrice) => {
+  const reverseTranslations = {
+    '经济': 'Budget',
+    '适中': 'Moderate',
+    '高价': 'Expensive',
+    '豪华': 'Very Expensive',
+    '奢华': 'Luxury',
+    '未知': 'Unknown'
+  }
+  
+  return reverseTranslations[translatedPrice] || translatedPrice
+}
+
 // 方法
 const getPercentage = (value, total) => {
   return total > 0 ? (value / total * 100).toFixed(1) : 0
+}
+
+// 计算最大百分比，避免条形图过短或过长
+const getMaxPercentage = (value, maxValue, maxPercent = 80) => {
+  if (maxValue === 0) return 0
+  return (value / maxValue * maxPercent).toFixed(1)
 }
 
 // 生命周期
@@ -207,50 +268,107 @@ onMounted(async () => {
 
 .charts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+  gap: 32px;
   margin-bottom: 48px;
 }
 
 .chart-container {
-  min-height: 300px;
+  padding: 10px 0;
 }
 
-.star-chart, .price-chart {
-  .star-item, .price-item {
+.chart {
+  padding: 15px 10px;
+  
+  .chart-item {
     display: flex;
     align-items: center;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
     gap: 16px;
 
-    .star-label, .price-label {
-      min-width: 80px;
-      font-weight: 500;
-      color: #4a5568;
+    &:last-child {
+      margin-bottom: 0;
     }
 
-    .star-bar, .price-bar {
+    .chart-label {
+      min-width: 70px;
+      width: 70px;
+      font-weight: 500;
+      color: #4a5568;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+    }
+
+    .chart-bar {
       flex: 1;
-      height: 24px;
+      height: 28px;
       background: #e2e8f0;
-      border-radius: 12px;
+      border-radius: 14px;
       overflow: hidden;
       position: relative;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
 
-      .star-fill, .price-fill {
+      .chart-fill {
         height: 100%;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 12px;
-        transition: width 0.8s ease;
+        border-radius: 14px;
+        transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        display: flex;
+        align-items: center;
+        padding-left: 12px;
+        
+        .bar-value {
+          color: rgba(255, 255, 255, 0.9);
+          font-size: 12px;
+          font-weight: 500;
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+        
+        &:hover .bar-value {
+          opacity: 1;
+        }
       }
     }
 
-    .star-count, .price-count {
+    .chart-count {
       min-width: 60px;
       text-align: right;
       font-weight: 600;
       color: #2d3748;
     }
+  }
+}
+
+.star-chart {
+  .star-label {
+    .star-icon {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #4c51bf;
+      color: white;
+      border-radius: 50%;
+      font-weight: bold;
+      margin-right: 4px;
+    }
+  }
+  
+  .star-fill {
+    background: linear-gradient(135deg, #6366f1 0%, #4c51bf 100%);
+  }
+}
+
+.price-chart {
+  .price-label {
+    cursor: help;
+  }
+  
+  .price-fill {
+    background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
   }
 }
 

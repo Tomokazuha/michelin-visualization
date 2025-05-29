@@ -222,70 +222,61 @@ def get_restaurants():
 def get_geojson():
     """获取餐厅地理数据（GeoJSON格式）"""
     try:
-        # 生成模拟的GeoJSON数据
-        cities = [
-            {'name': '东京', 'region': '日本', 'continent': '亚洲', 'lat': 35.6762, 'lng': 139.6503},
-            {'name': '巴黎', 'region': '法国', 'continent': '欧洲', 'lat': 48.8566, 'lng': 2.3522},
-            {'name': '纽约', 'region': '美国', 'continent': '北美洲', 'lat': 40.7128, 'lng': -74.0060},
-            {'name': '伦敦', 'region': '英国', 'continent': '欧洲', 'lat': 51.5074, 'lng': -0.1278},
-            {'name': '香港', 'region': '中国', 'continent': '亚洲', 'lat': 22.3193, 'lng': 114.1694},
-            {'name': '米兰', 'region': '意大利', 'continent': '欧洲', 'lat': 45.4642, 'lng': 9.1900},
-            {'name': '新加坡', 'region': '新加坡', 'continent': '亚洲', 'lat': 1.3521, 'lng': 103.8198},
-            {'name': '悉尼', 'region': '澳大利亚', 'continent': '大洋洲', 'lat': -33.8688, 'lng': 151.2093},
-            {'name': '首尔', 'region': '韩国', 'continent': '亚洲', 'lat': 37.5665, 'lng': 126.9780},
-            {'name': '马德里', 'region': '西班牙', 'continent': '欧洲', 'lat': 40.4168, 'lng': -3.7038}
-        ]
-
-        cuisines = ['法式', '日式', '意式', '中式', '现代欧式', '海鲜', '创意料理', '传统料理']
-        prices = ['$', '$$', '$$$', '$$$$']
-
-        features = []
-        restaurant_id = 1
-
-        for city in cities:
-            # 每个城市生成4-10家餐厅
-            restaurant_count = random.randint(4, 10)
+        # 检查是否有缓存的GeoJSON数据
+        if 'geojson' in data_service.data_cache:
+            geojson_data = data_service.data_cache['geojson']
+            return jsonify({
+                'success': True,
+                'data': geojson_data,
+                'message': f'成功获取{len(geojson_data["features"])}家餐厅的地理数据'
+            })
             
-            for i in range(restaurant_count):
-                stars = random.choices([1, 2, 3], weights=[50, 30, 20])[0]
-                cuisine = random.choice(cuisines)
-                price = random.choice(prices)
-                
-                # 在城市周围随机分布餐厅
-                lat_offset = (random.random() - 0.5) * 0.3
-                lng_offset = (random.random() - 0.5) * 0.3
-                
-                lat = city['lat'] + lat_offset
-                lng = city['lng'] + lng_offset
-                
-                features.append({
+        # 如果没有缓存的GeoJSON数据，则从cleaned数据生成
+        df = data_service.get_data('cleaned')
+        if df is None:
+            return jsonify({'success': False, 'error': '数据未加载'}), 404
+            
+        # 只保留有经纬度信息的餐厅
+        geo_df = df[df['latitude'].notna() & df['longitude'].notna()].copy()
+        
+        # 构建GeoJSON特征集合
+        features = []
+        for idx, row in geo_df.iterrows():
+            try:
+                feature = {
                     'type': 'Feature',
                     'geometry': {
                         'type': 'Point',
-                        'coordinates': [lng, lat]
+                        'coordinates': [float(row['longitude']), float(row['latitude'])]
                     },
                     'properties': {
-                        'id': restaurant_id,
-                        'name': f"{city['name']}{cuisine}餐厅{i + 1}",
-                        'stars': stars,
-                        'city': city['name'],
-                        'region': city['region'],
-                        'continent': city['continent'],
-                        'cuisine': cuisine,
-                        'price': price,
-                        'latitude': lat,
-                        'longitude': lng,
-                        'year': random.randint(2018, 2024),
-                        'website': f"https://restaurant{restaurant_id}.example.com"
+                        'id': int(idx),
+                        'name': str(row.get('name', '')),
+                        'stars': int(row.get('stars', 0)),
+                        'city': str(row.get('city', '')),
+                        'region': str(row.get('region', '')),
+                        'continent': str(row.get('continent', '')),
+                        'cuisine': str(row.get('cuisine', '')),
+                        'price': str(row.get('price', '')),
+                        'latitude': float(row['latitude']),
+                        'longitude': float(row['longitude']),
+                        'year': int(row.get('year', 0)) if pd.notna(row.get('year')) else None,
+                        'website': str(row.get('url', ''))
                     }
-                })
-                restaurant_id += 1
-
+                }
+                features.append(feature)
+            except Exception as e:
+                logger.warning(f"处理餐厅数据时出错 (索引 {idx}): {e}")
+                continue
+                
         geojson_data = {
             'type': 'FeatureCollection',
             'features': features
         }
-
+        
+        # 缓存生成的GeoJSON数据
+        data_service.data_cache['geojson'] = geojson_data
+        
         return jsonify({
             'success': True,
             'data': geojson_data,
@@ -293,6 +284,7 @@ def get_geojson():
         })
 
     except Exception as e:
+        logger.error(f"获取地理数据时出错: {e}")
         return jsonify({
             'success': False,
             'error': str(e),
@@ -381,23 +373,99 @@ def get_trends_analysis():
 def get_clustering_analysis():
     """获取聚类分析结果"""
     try:
-        # 直接返回模拟的聚类信息，避免数据加载问题
+        # 获取真实的聚类分析数据
+        clustering_data = data_service.get_data('clustering')
+        
+        if clustering_data is None:
+            logger.warning("聚类数据未加载，尝试加载聚类结果文件")
+            # 尝试直接从文件加载
+            clustering_path = PROCESSED_DIR / "clusters.joblib"
+            if clustering_path.exists():
+                try:
+                    import joblib
+                    clustering_data = joblib.load(clustering_path)
+                    logger.info("成功从文件加载聚类数据")
+                except Exception as e:
+                    logger.error(f"从文件加载聚类数据失败: {e}")
+                    clustering_data = None
+        
+        if clustering_data:
+            # 从真实聚类数据中提取关键信息
+            best_algorithm = clustering_data.get('best_algorithm')
+            
+            if best_algorithm and 'clustering_experiments' in clustering_data:
+                experiments = clustering_data['clustering_experiments']
+                best_result = experiments.get(best_algorithm, {}).get('best_result', {})
+                
+                # 提取聚类信息
+                n_clusters = 0
+                silhouette_score = 0
+                labels = []
+                
+                if 'labels' in best_result:
+                    labels = best_result['labels']
+                    # 计算实际聚类数(排除噪声点)
+                    n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
+                
+                if 'silhouette_score' in best_result:
+                    silhouette_score = best_result['silhouette_score']
+                
+                # 从可视化数据中提取PCA结果(如果有)
+                pca_data = None
+                if 'visualizations' in clustering_data and 'pca' in clustering_data['visualizations']:
+                    pca_vis = clustering_data['visualizations']['pca']
+                    pca_data = pca_vis.get('data')
+                    # 确保PCA数据是Python列表
+                    if hasattr(pca_data, 'tolist'):
+                        pca_data = pca_data.tolist()
+                
+                # 准备集群统计信息 - 确保使用Python原生类型
+                cluster_stats = {}
+                if 'cluster_analysis' in clustering_data and 'cluster_sizes' in clustering_data['cluster_analysis']:
+                    for key, value in clustering_data['cluster_analysis']['cluster_sizes'].items():
+                        # 转换可能的numpy类型到Python原生类型
+                        cluster_stats[str(key)] = int(value)
+                
+                # 获取聚类标签 - 确保是Python列表且元素是Python原生类型
+                cluster_labels = []
+                if labels is not None:
+                    # 获取唯一标签，排除噪声点-1
+                    unique_labels = set(labels)
+                    if -1 in unique_labels:
+                        unique_labels.remove(-1)
+                    cluster_labels = [int(label) for label in unique_labels]
+                
+                # 转换标签为Python列表
+                python_labels = []
+                if hasattr(labels, 'tolist'):
+                    python_labels = [int(label) for label in labels.tolist()]
+                else:
+                    python_labels = [int(label) for label in labels]
+                
+                # 构建集群信息对象
+                cluster_info = {
+                    'algorithm': str(best_algorithm).upper(),
+                    'n_clusters': int(n_clusters),
+                    'silhouette_score': float(silhouette_score),
+                    'cluster_labels': cluster_labels,
+                    'pca_data': pca_data,
+                    'labels': python_labels,
+                    'summary': f'使用{str(best_algorithm).upper()}算法成功识别出{int(n_clusters)}个不同的餐厅聚类',
+                    'cluster_stats': cluster_stats
+                }
+                
+                return jsonify({
+                    'success': True,
+                    'data': cluster_info
+                })
+        
+        # 如果没有获取到真实聚类数据，返回默认值
+        logger.warning("未能获取真实聚类数据，返回默认值")
         cluster_info = {
             'algorithm': 'DBSCAN',
             'n_clusters': 28,
             'silhouette_score': 0.436,
-            'cluster_centers': [
-                [2.3, 1.8], [1.2, 3.1], [-0.5, 2.4], [3.1, -1.2],
-                [0.8, 0.9], [-1.3, 1.7], [2.8, 2.9], [-2.1, -0.8]
-            ],
-            'cluster_labels': list(range(28)),
-            'summary': '成功识别出28个不同的餐厅聚类',
-            'cluster_stats': {
-                'largest_cluster': 45,
-                'smallest_cluster': 8,
-                'average_cluster_size': 22.5,
-                'noise_points': 12
-            }
+            'summary': '聚类分析数据（默认值）- 无法获取真实聚类结果'
         }
         
         return jsonify({
@@ -409,12 +477,13 @@ def get_clustering_analysis():
         logger.error(f"获取聚类分析时出错: {e}")
         # 即使出错也返回基本数据
         return jsonify({
-            'success': True,
+            'success': False,
+            'error': str(e),
             'data': {
                 'algorithm': 'DBSCAN',
                 'n_clusters': 28,
                 'silhouette_score': 0.436,
-                'summary': '聚类分析数据（模拟）'
+                'summary': '聚类分析数据获取失败'
             }
         })
 
