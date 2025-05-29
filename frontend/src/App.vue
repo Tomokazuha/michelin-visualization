@@ -7,7 +7,9 @@
     <main class="main-content">
       <router-view v-slot="{ Component, route }">
         <transition name="fade" mode="out-in">
-          <component :is="Component" :key="route.path" />
+          <div :key="route.path" class="page-wrapper">
+            <component :is="Component" />
+          </div>
         </transition>
       </router-view>
     </main>
@@ -118,6 +120,12 @@ echarts.registerMap('world', {
   padding: 0;
   overflow-y: auto;
   height: calc(100vh - 64px);
+}
+
+.page-wrapper {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
 }
 
 // 页面切换动画

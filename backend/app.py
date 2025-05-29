@@ -715,6 +715,29 @@ def get_feature_analysis():
         })
 
 
+@app.route('/api/data/reload', methods=['POST'])
+def reload_data():
+    """重新加载数据"""
+    try:
+        # 清除缓存
+        data_service.data_cache.clear()
+        
+        # 重新加载所有数据
+        data_service.load_all_data()
+        
+        return jsonify({
+            'success': True,
+            'message': '数据重新加载成功',
+            'loaded_data': list(data_service.data_cache.keys())
+        })
+    except Exception as e:
+        logger.error(f"重新加载数据时出错: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
 @app.errorhandler(404)
 def not_found(error):
     return jsonify({

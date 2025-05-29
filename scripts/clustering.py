@@ -124,7 +124,7 @@ def perform_clustering(X, restaurants_df, n_clusters_range=(3, 15), random_state
     best_kmeans_n = 0
     
     for n in range(n_clusters_range[0], n_clusters_range[1] + 1):
-        kmeans = KMeans(n_clusters=n, random_state=random_state)
+        kmeans = KMeans(n_clusters=n, random_state=random_state, n_init=10)
         labels = kmeans.fit_predict(X_scaled)
         
         if len(set(labels)) > 1:  # 确保至少有两个聚类才计算轮廓系数
@@ -132,7 +132,8 @@ def perform_clustering(X, restaurants_df, n_clusters_range=(3, 15), random_state
             kmeans_results[n] = {
                 'silhouette_score': silhouette_avg,
                 'labels': labels,
-                'centers': kmeans.cluster_centers_
+                'centers': kmeans.cluster_centers_,
+                'inertia': kmeans.inertia_
             }
             
             if silhouette_avg > best_kmeans_silhouette:
@@ -146,40 +147,52 @@ def perform_clustering(X, restaurants_df, n_clusters_range=(3, 15), random_state
             'best_result': kmeans_results[best_kmeans_n]
         }
     
-    # 2. DBSCAN聚类
+    # 2. DBSCAN聚类 - 使用更宽松的参数范围
     dbscan_results = {}
-    best_dbscan_silhouette = -1
+    best_dbscan_score = -1
     best_dbscan_params = None
     
-    for eps in [0.3, 0.5, 0.7, 1.0, 1.5]:
-        for min_samples in [3, 5, 10, 15]:
+    # 调整参数范围，更关注聚类有效性而不是轮廓系数
+    for eps in [0.5, 0.8, 1.0, 1.2, 1.5, 2.0, 2.5]:
+        for min_samples in [3, 5, 8, 10]:
             dbscan = DBSCAN(eps=eps, min_samples=min_samples)
             labels = dbscan.fit_predict(X_scaled)
             
             # 计算有效聚类数(排除噪声点-1)
             n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
+            noise_ratio = np.sum(labels == -1) / len(labels)
             
-            if n_clusters > 1:  # 确保至少有两个有效聚类
+            # 只考虑噪声点比例低于50%且至少有3个聚类的结果
+            if n_clusters >= 3 and noise_ratio < 0.5:
                 # 对于DBSCAN，我们需要排除噪声点(-1)来计算轮廓系数
                 non_noise_mask = labels != -1
-                if sum(non_noise_mask) > 1:
+                if sum(non_noise_mask) > 10:  # 确保有足够的非噪声点
                     silhouette_avg = silhouette_score(X_scaled[non_noise_mask], labels[non_noise_mask])
+                    
+                    # 综合评分：轮廓系数 + 噪声点惩罚 + 聚类数量奖励
+                    combined_score = silhouette_avg * (1 - noise_ratio) * min(1.0, n_clusters / 8)
+                    
                     param_key = f"eps{eps}_min{min_samples}"
                     dbscan_results[param_key] = {
                         'silhouette_score': silhouette_avg,
+                        'combined_score': combined_score,
                         'labels': labels,
                         'n_clusters': n_clusters,
+                        'noise_ratio': noise_ratio,
                         'params': {'eps': eps, 'min_samples': min_samples}
                     }
                     
-                    if silhouette_avg > best_dbscan_silhouette:
-                        best_dbscan_silhouette = silhouette_avg
+                    if combined_score > best_dbscan_score:
+                        best_dbscan_score = combined_score
                         best_dbscan_params = param_key
+                        
+                    print(f"DBSCAN eps={eps}, min_samples={min_samples}: 聚类数={n_clusters}, 噪声比例={noise_ratio:.2%}, 轮廓系数={silhouette_avg:.3f}, 综合评分={combined_score:.3f}")
     
     if best_dbscan_params:
         clustering_experiments['dbscan'] = {
             'best_params': best_dbscan_params,
-            'best_silhouette': best_dbscan_silhouette,
+            'best_silhouette': dbscan_results[best_dbscan_params]['silhouette_score'],
+            'best_score': best_dbscan_score,
             'best_result': dbscan_results[best_dbscan_params]
         }
     
@@ -189,7 +202,7 @@ def perform_clustering(X, restaurants_df, n_clusters_range=(3, 15), random_state
     best_hc_n = 0
     
     for n in range(n_clusters_range[0], n_clusters_range[1] + 1):
-        hc = AgglomerativeClustering(n_clusters=n)
+        hc = AgglomerativeClustering(n_clusters=n, linkage='ward')
         labels = hc.fit_predict(X_scaled)
         
         if len(set(labels)) > 1:
@@ -210,14 +223,45 @@ def perform_clustering(X, restaurants_df, n_clusters_range=(3, 15), random_state
             'best_result': hc_results[best_hc_n]
         }
     
-    # 确定最佳算法
+    # 优先选择K-means，除非其他算法明显更好
     best_algorithm = None
-    best_silhouette = -1
+    best_score = -1
     
-    for algorithm, results in clustering_experiments.items():
-        if results['best_silhouette'] > best_silhouette:
-            best_silhouette = results['best_silhouette']
-            best_algorithm = algorithm
+    # 评估每个算法
+    algorithm_scores = {}
+    
+    if 'kmeans' in clustering_experiments:
+        kmeans_score = clustering_experiments['kmeans']['best_silhouette']
+        algorithm_scores['kmeans'] = kmeans_score
+        print(f"K-means最佳评分: {kmeans_score:.3f} (聚类数: {clustering_experiments['kmeans']['best_n']})")
+    
+    if 'dbscan' in clustering_experiments:
+        dbscan_score = clustering_experiments['dbscan']['best_score']
+        algorithm_scores['dbscan'] = dbscan_score
+        print(f"DBSCAN最佳评分: {dbscan_score:.3f}")
+    
+    if 'hierarchical' in clustering_experiments:
+        hc_score = clustering_experiments['hierarchical']['best_silhouette']
+        algorithm_scores['hierarchical'] = hc_score
+        print(f"层次聚类最佳评分: {hc_score:.3f} (聚类数: {clustering_experiments['hierarchical']['best_n']})")
+    
+    # 选择最佳算法，优先考虑K-means
+    if 'kmeans' in algorithm_scores:
+        kmeans_score = algorithm_scores['kmeans']
+        # K-means优先，除非其他算法明显更好(差距超过0.1)
+        if all(kmeans_score + 0.1 >= score for algo, score in algorithm_scores.items() if algo != 'kmeans'):
+            best_algorithm = 'kmeans'
+            best_score = kmeans_score
+        else:
+            # 选择评分最高的算法
+            best_algorithm = max(algorithm_scores, key=algorithm_scores.get)
+            best_score = algorithm_scores[best_algorithm]
+    else:
+        # 如果没有K-means结果，选择评分最高的
+        best_algorithm = max(algorithm_scores, key=algorithm_scores.get) if algorithm_scores else None
+        best_score = algorithm_scores[best_algorithm] if best_algorithm else -1
+    
+    print(f"选择的最佳算法: {best_algorithm}, 评分: {best_score:.3f}")
     
     # 获取最佳聚类结果
     if best_algorithm:

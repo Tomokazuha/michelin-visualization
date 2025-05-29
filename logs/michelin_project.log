@@ -293,3 +293,13 @@
 2025-05-26 11:18:24,463 - utils - INFO - 
 [下一步] 然后启动前端应用:
 2025-05-26 11:18:24,463 - utils - INFO -   cd frontend && npm install && npm run dev
+2025-05-30 00:46:35,395 - scripts.utils - INFO - 目录准备完成: E:\作业\数据可视化\michelin-visualization\data\processed
+2025-05-30 00:46:35,396 - scripts.utils - INFO - 目录准备完成: E:\作业\数据可视化\michelin-visualization\data\output
+2025-05-30 00:46:35,397 - scripts.utils - INFO - 从E:\作业\数据可视化\michelin-visualization\data\raw加载米其林餐厅数据
+2025-05-30 00:46:35,426 - scripts.utils - INFO - 从one-star-michelin-restaurants.csv加载了549条餐厅记录
+2025-05-30 00:46:35,431 - scripts.utils - INFO - 从two-stars-michelin-restaurants.csv加载了110条餐厅记录
+2025-05-30 00:46:35,435 - scripts.utils - INFO - 从three-stars-michelin-restaurants.csv加载了36条餐厅记录
+2025-05-30 00:46:35,437 - scripts.utils - INFO - 合并数据集包含695条餐厅记录
+2025-05-30 00:46:35,438 - scripts.utils - INFO - 开始预处理695条餐厅数据
+2025-05-30 00:46:35,452 - scripts.utils - INFO - 已创建价格级别(price_level)列
+2025-05-30 00:46:35,463 - scripts.utils - INFO - 数据预处理完成，最终数据集包含695条记录
