@@ -1,0 +1,1687 @@
+{
+  "timestamp": "2025-05-30T19:52:30.447214",
+  "best_algorithm": "dbscan",
+  "clustering_performance": {
+    "silhouette_score": 0.847955217731779,
+    "calinski_harabasz_score": 829.5464948509829,
+    "davies_bouldin_score": 0.22823583089299182,
+    "n_clusters": 68,
+    "noise_ratio": 0.29600000000000004,
+    "balance_score": 0.25576596704487164,
+    "composite_score": 0.7499026545650253
+  },
+  "cluster_insights": {
+    "cluster_0": {
+      "size": 3,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Modern cuisine": 3
+      },
+      "top_regions": {
+        "Austria": 3
+      },
+      "geographic_spread": {
+        "lat_range": [
+          48.18957,
+          48.216503
+        ],
+        "lon_range": [
+          16.34115,
+          16.37931
+        ]
+      },
+      "avg_value_score": 0.4761904761904761,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_1": {
+      "size": 10,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Contemporary": 10
+      },
+      "top_regions": {
+        "California": 10
+      },
+      "geographic_spread": {
+        "lat_range": [
+          36.55406,
+          38.60428
+        ],
+        "lon_range": [
+          -122.88647,
+          -121.41424
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_2": {
+      "size": 3,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Japanese": 3
+      },
+      "top_regions": {
+        "California": 3
+      },
+      "geographic_spread": {
+        "lat_range": [
+          37.52114,
+          38.29924
+        ],
+        "lon_range": [
+          -122.3366,
+          -122.28928
+        ]
+      },
+      "avg_value_score": 0.4761904761904761,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_3": {
+      "size": 12,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Californian": 7,
+        "American": 2,
+        "Korean": 1
+      },
+      "top_regions": {
+        "California": 12
+      },
+      "geographic_spread": {
+        "lat_range": [
+          37.72669,
+          37.79592
+        ],
+        "lon_range": [
+          -122.45264,
+          -122.406654
+        ]
+      },
+      "avg_value_score": 0.4761904761904762,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_4": {
+      "size": 5,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Japanese": 5
+      },
+      "top_regions": {
+        "California": 5
+      },
+      "geographic_spread": {
+        "lat_range": [
+          37.77077,
+          37.79699
+        ],
+        "lon_range": [
+          -122.461525,
+          -122.40298
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_5": {
+      "size": 8,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Contemporary": 8
+      },
+      "top_regions": {
+        "California": 8
+      },
+      "geographic_spread": {
+        "lat_range": [
+          37.761395,
+          37.80599
+        ],
+        "lon_range": [
+          -122.42271,
+          -122.39213
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_6": {
+      "size": 5,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Californian": 4,
+        "Chinese": 1
+      },
+      "top_regions": {
+        "California": 5
+      },
+      "geographic_spread": {
+        "lat_range": [
+          34.024952,
+          39.135876
+        ],
+        "lon_range": [
+          -123.719444,
+          -118.07159
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_7": {
+      "size": 8,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Japanese": 8
+      },
+      "top_regions": {
+        "California": 8
+      },
+      "geographic_spread": {
+        "lat_range": [
+          33.67759,
+          34.15784
+        ],
+        "lon_range": [
+          -118.49415,
+          -117.886566
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_8": {
+      "size": 3,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Contemporary": 3
+      },
+      "top_regions": {
+        "California": 3
+      },
+      "geographic_spread": {
+        "lat_range": [
+          34.01679,
+          34.084255
+        ],
+        "lon_range": [
+          -118.49748,
+          -118.33851
+        ]
+      },
+      "avg_value_score": 0.4761904761904761,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_9": {
+      "size": 16,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Contemporary": 16
+      },
+      "top_regions": {
+        "Chicago": 11,
+        "Washington DC": 5
+      },
+      "geographic_spread": {
+        "lat_range": [
+          38.88064,
+          41.969555
+        ],
+        "lon_range": [
+          -87.69596,
+          -76.99515
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_10": {
+      "size": 4,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "American": 3,
+        "Seafood": 1
+      },
+      "top_regions": {
+        "Washington DC": 3,
+        "Chicago": 1
+      },
+      "geographic_spread": {
+        "lat_range": [
+          38.905373,
+          41.88394
+        ],
+        "lon_range": [
+          -87.64247,
+          -77.024666
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_11": {
+      "size": 3,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Italian": 3
+      },
+      "top_regions": {
+        "Washington DC": 2,
+        "Chicago": 1
+      },
+      "geographic_spread": {
+        "lat_range": [
+          38.89416,
+          41.90062
+        ],
+        "lon_range": [
+          -87.62457,
+          -76.99908
+        ]
+      },
+      "avg_value_score": 0.4761904761904761,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_12": {
+      "size": 3,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Modern cuisine": 3
+      },
+      "top_regions": {
+        "Croatia": 3
+      },
+      "geographic_spread": {
+        "lat_range": [
+          43.73603,
+          45.811054
+        ],
+        "lon_range": [
+          14.251401,
+          15.988205
+        ]
+      },
+      "avg_value_score": 0.4761904761904761,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_13": {
+      "size": 9,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Modern cuisine": 9
+      },
+      "top_regions": {
+        "Finland": 5,
+        "Czech Republic": 2,
+        "Poland": 2
+      },
+      "geographic_spread": {
+        "lat_range": [
+          50.09115,
+          60.17236
+        ],
+        "lon_range": [
+          14.42193,
+          24.95648
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_14": {
+      "size": 13,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Modern cuisine": 13
+      },
+      "top_regions": {
+        "Denmark": 13
+      },
+      "geographic_spread": {
+        "lat_range": [
+          55.56659,
+          56.15893
+        ],
+        "lon_range": [
+          9.53302,
+          12.5980835
+        ]
+      },
+      "avg_value_score": 0.4761904761904762,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_15": {
+      "size": 4,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Creative": 4
+      },
+      "top_regions": {
+        "Denmark": 4
+      },
+      "geographic_spread": {
+        "lat_range": [
+          55.12417,
+          56.12497
+        ],
+        "lon_range": [
+          10.208638,
+          12.59191
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_16": {
+      "size": 16,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Cantonese": 16
+      },
+      "top_regions": {
+        "Hong Kong": 16
+      },
+      "geographic_spread": {
+        "lat_range": [
+          22.26921,
+          22.320219
+        ],
+        "lon_range": [
+          114.15312,
+          114.22482
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_17": {
+      "size": 5,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Dim Sum": 1,
+        "Teppanyaki": 1,
+        "Noodles and congee": 1
+      },
+      "top_regions": {
+        "Hong Kong": 5
+      },
+      "geographic_spread": {
+        "lat_range": [
+          22.276443,
+          22.32805
+        ],
+        "lon_range": [
+          114.16665,
+          114.19211
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_18": {
+      "size": 4,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Sushi": 2,
+        "Seafood": 1,
+        "Indian": 1
+      },
+      "top_regions": {
+        "Hong Kong": 4
+      },
+      "geographic_spread": {
+        "lat_range": [
+          22.28005,
+          22.296112
+        ],
+        "lon_range": [
+          114.15525,
+          114.174034
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_19": {
+      "size": 3,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "French": 3
+      },
+      "top_regions": {
+        "Hong Kong": 3
+      },
+      "geographic_spread": {
+        "lat_range": [
+          22.235146,
+          22.29583
+        ],
+        "lon_range": [
+          114.152405,
+          114.198524
+        ]
+      },
+      "avg_value_score": 0.4761904761904761,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_20": {
+      "size": 3,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Shanghainese": 3
+      },
+      "top_regions": {
+        "Hong Kong": 3
+      },
+      "geographic_spread": {
+        "lat_range": [
+          22.2787,
+          22.295143
+        ],
+        "lon_range": [
+          114.168236,
+          114.17763
+        ]
+      },
+      "avg_value_score": 0.4761904761904761,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_21": {
+      "size": 4,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Innovative": 4
+      },
+      "top_regions": {
+        "Hong Kong": 4
+      },
+      "geographic_spread": {
+        "lat_range": [
+          22.276512,
+          22.284931
+        ],
+        "lon_range": [
+          114.15276,
+          114.17718
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_22": {
+      "size": 3,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "European contemporary": 2,
+        "Steakhouse": 1
+      },
+      "top_regions": {
+        "Hong Kong": 3
+      },
+      "geographic_spread": {
+        "lat_range": [
+          22.27982,
+          22.281048
+        ],
+        "lon_range": [
+          114.15682,
+          114.15752
+        ]
+      },
+      "avg_value_score": 0.4761904761904761,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_23": {
+      "size": 5,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Modern cuisine": 5
+      },
+      "top_regions": {
+        "Hungary": 5
+      },
+      "geographic_spread": {
+        "lat_range": [
+          47.48873,
+          47.50113
+        ],
+        "lon_range": [
+          19.048595,
+          19.061779
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_24": {
+      "size": 7,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Cantonese": 7
+      },
+      "top_regions": {
+        "Macau": 7
+      },
+      "geographic_spread": {
+        "lat_range": [
+          22.140524,
+          22.190178
+        ],
+        "lon_range": [
+          113.54028,
+          113.56256
+        ]
+      },
+      "avg_value_score": 0.4761904761904762,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_25": {
+      "size": 4,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Italian": 4
+      },
+      "top_regions": {
+        "New York City": 4
+      },
+      "geographic_spread": {
+        "lat_range": [
+          40.727966,
+          40.75013
+        ],
+        "lon_range": [
+          -74.0077,
+          -73.98357
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_26": {
+      "size": 4,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "French": 4
+      },
+      "top_regions": {
+        "New York City": 4
+      },
+      "geographic_spread": {
+        "lat_range": [
+          40.711903,
+          40.77439
+        ],
+        "lon_range": [
+          -74.01544,
+          -73.96414
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_27": {
+      "size": 16,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Japanese": 16
+      },
+      "top_regions": {
+        "New York City": 16
+      },
+      "geographic_spread": {
+        "lat_range": [
+          40.72191,
+          40.810448
+        ],
+        "lon_range": [
+          -74.00633,
+          -73.943726
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_28": {
+      "size": 11,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "American": 4,
+        "Korean": 3,
+        "Seafood": 1
+      },
+      "top_regions": {
+        "New York City": 11
+      },
+      "geographic_spread": {
+        "lat_range": [
+          40.68704,
+          40.749973
+        ],
+        "lon_range": [
+          -74.00744,
+          -73.923035
+        ]
+      },
+      "avg_value_score": 0.4761904761904762,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_29": {
+      "size": 9,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Contemporary": 9
+      },
+      "top_regions": {
+        "New York City": 9
+      },
+      "geographic_spread": {
+        "lat_range": [
+          40.703613,
+          40.760685
+        ],
+        "lon_range": [
+          -74.00589,
+          -73.97355
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_30": {
+      "size": 4,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Mediterranean": 2,
+        "Spanish": 1,
+        "Fusion": 1
+      },
+      "top_regions": {
+        "New York City": 4
+      },
+      "geographic_spread": {
+        "lat_range": [
+          40.710354,
+          40.73885
+        ],
+        "lon_range": [
+          -73.99366,
+          -73.96317
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_31": {
+      "size": 5,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Mexican": 3,
+        "Scandinavian": 1,
+        "Steakhouse": 1
+      },
+      "top_regions": {
+        "New York City": 5
+      },
+      "geographic_spread": {
+        "lat_range": [
+          40.677395,
+          40.75234
+        ],
+        "lon_range": [
+          -73.98615,
+          -73.95425
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_32": {
+      "size": 6,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Modern cuisine": 6
+      },
+      "top_regions": {
+        "Ireland": 6
+      },
+      "geographic_spread": {
+        "lat_range": [
+          51.48285,
+          53.354374
+        ],
+        "lon_range": [
+          -9.460854,
+          -6.177574
+        ]
+      },
+      "avg_value_score": 0.4761904761904762,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_33": {
+      "size": 5,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "modern": 4,
+        "creative": 1
+      },
+      "top_regions": {
+        "Sao Paulo": 3,
+        "Rio de Janeiro": 2
+      },
+      "geographic_spread": {
+        "lat_range": [
+          -23.634005,
+          -22.95401
+        ],
+        "lon_range": [
+          -46.72428,
+          -43.194424
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_34": {
+      "size": 6,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Japanese": 6
+      },
+      "top_regions": {
+        "Sao Paulo": 6
+      },
+      "geographic_spread": {
+        "lat_range": [
+          -23.60882,
+          -23.56318
+        ],
+        "lon_range": [
+          -46.6809,
+          -46.64936
+        ]
+      },
+      "avg_value_score": 0.4761904761904762,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_35": {
+      "size": 7,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Korean": 5,
+        "Chinese": 2
+      },
+      "top_regions": {
+        "South Korea": 7
+      },
+      "geographic_spread": {
+        "lat_range": [
+          37.52212,
+          37.592903
+        ],
+        "lon_range": [
+          126.91324,
+          127.00135
+        ]
+      },
+      "avg_value_score": 0.4761904761904762,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_36": {
+      "size": 6,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Innovative": 6
+      },
+      "top_regions": {
+        "South Korea": 6
+      },
+      "geographic_spread": {
+        "lat_range": [
+          37.49417,
+          37.536415
+        ],
+        "lon_range": [
+          126.9948,
+          127.049736
+        ]
+      },
+      "avg_value_score": 0.4761904761904762,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_37": {
+      "size": 3,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Fujian": 1,
+        "Italian contemporary": 1,
+        "Peranakan": 1
+      },
+      "top_regions": {
+        "Singapore": 3
+      },
+      "geographic_spread": {
+        "lat_range": [
+          1.2797709,
+          1.30969
+        ],
+        "lon_range": [
+          103.8402,
+          103.8573
+        ]
+      },
+      "avg_value_score": 0.4761904761904761,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_38": {
+      "size": 5,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Cantonese": 5
+      },
+      "top_regions": {
+        "Singapore": 5
+      },
+      "geographic_spread": {
+        "lat_range": [
+          1.291284,
+          1.304937
+        ],
+        "lon_range": [
+          103.825,
+          103.8603
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_39": {
+      "size": 7,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Sushi": 4,
+        "Chinese": 2,
+        "Indian": 1
+      },
+      "top_regions": {
+        "Singapore": 7
+      },
+      "geographic_spread": {
+        "lat_range": [
+          1.2959028,
+          1.310767
+        ],
+        "lon_range": [
+          103.8257,
+          103.8539
+        ]
+      },
+      "avg_value_score": 0.4761904761904762,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_40": {
+      "size": 3,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Australian": 2,
+        "Barbecue": 1
+      },
+      "top_regions": {
+        "Singapore": 3
+      },
+      "geographic_spread": {
+        "lat_range": [
+          1.280501,
+          1.295452
+        ],
+        "lon_range": [
+          103.8418,
+          103.8516
+        ]
+      },
+      "avg_value_score": 0.4761904761904761,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_41": {
+      "size": 4,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "French contemporary": 4
+      },
+      "top_regions": {
+        "Singapore": 4
+      },
+      "geographic_spread": {
+        "lat_range": [
+          1.279368,
+          1.302379
+        ],
+        "lon_range": [
+          103.8366,
+          103.8538
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_42": {
+      "size": 5,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Innovative": 5
+      },
+      "top_regions": {
+        "Singapore": 5
+      },
+      "geographic_spread": {
+        "lat_range": [
+          1.279372,
+          1.315121
+        ],
+        "lon_range": [
+          103.8154,
+          103.8562
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_43": {
+      "size": 3,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "European contemporary": 2,
+        "Steakhouse": 1
+      },
+      "top_regions": {
+        "Singapore": 3
+      },
+      "geographic_spread": {
+        "lat_range": [
+          1.2853268,
+          1.309123
+        ],
+        "lon_range": [
+          103.8294,
+          103.8607
+        ]
+      },
+      "avg_value_score": 0.4761904761904761,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_44": {
+      "size": 6,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Creative": 6
+      },
+      "top_regions": {
+        "Sweden": 6
+      },
+      "geographic_spread": {
+        "lat_range": [
+          55.53376,
+          59.33867
+        ],
+        "lon_range": [
+          11.9624,
+          18.079683
+        ]
+      },
+      "avg_value_score": 0.4761904761904762,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_45": {
+      "size": 5,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Modern cuisine": 5
+      },
+      "top_regions": {
+        "Sweden": 5
+      },
+      "geographic_spread": {
+        "lat_range": [
+          57.69688,
+          59.34777
+        ],
+        "lon_range": [
+          11.965365,
+          18.07543
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_46": {
+      "size": 3,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Taiwanese": 3
+      },
+      "top_regions": {
+        "Taipei": 3
+      },
+      "geographic_spread": {
+        "lat_range": [
+          25.038046,
+          25.118216
+        ],
+        "lon_range": [
+          121.52399,
+          121.53623
+        ]
+      },
+      "avg_value_score": 0.4761904761904761,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_47": {
+      "size": 4,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Sushi": 3,
+        "Seafood": 1
+      },
+      "top_regions": {
+        "Taipei": 4
+      },
+      "geographic_spread": {
+        "lat_range": [
+          25.03618,
+          25.055832
+        ],
+        "lon_range": [
+          121.4984,
+          121.55465
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_48": {
+      "size": 3,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Innovative": 3
+      },
+      "top_regions": {
+        "Thailand": 3
+      },
+      "geographic_spread": {
+        "lat_range": [
+          13.727946,
+          13.737806
+        ],
+        "lon_range": [
+          100.54275,
+          100.58844
+        ]
+      },
+      "avg_value_score": 0.4761904761904761,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_49": {
+      "size": 9,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Thai": 8,
+        "Sushi": 1
+      },
+      "top_regions": {
+        "Thailand": 9
+      },
+      "geographic_spread": {
+        "lat_range": [
+          13.724357,
+          13.756321
+        ],
+        "lon_range": [
+          100.502045,
+          100.57972
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_50": {
+      "size": 3,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "French contemporary": 3
+      },
+      "top_regions": {
+        "Thailand": 3
+      },
+      "geographic_spread": {
+        "lat_range": [
+          13.718885,
+          13.742978
+        ],
+        "lon_range": [
+          100.546326,
+          100.54798
+        ]
+      },
+      "avg_value_score": 0.4761904761904761,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_51": {
+      "size": 6,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Modern cuisine": 6
+      },
+      "top_regions": {
+        "United Kingdom": 6
+      },
+      "geographic_spread": {
+        "lat_range": [
+          50.1889,
+          56.222126
+        ],
+        "lon_range": [
+          -4.97088,
+          -2.696321
+        ]
+      },
+      "avg_value_score": 0.4761904761904762,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_52": {
+      "size": 26,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Modern British": 26
+      },
+      "top_regions": {
+        "United Kingdom": 26
+      },
+      "geographic_spread": {
+        "lat_range": [
+          50.45853,
+          54.46396
+        ],
+        "lon_range": [
+          -3.52438,
+          0.98729
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_53": {
+      "size": 27,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Modern cuisine": 27
+      },
+      "top_regions": {
+        "United Kingdom": 27
+      },
+      "geographic_spread": {
+        "lat_range": [
+          49.181225,
+          54.96758
+        ],
+        "lon_range": [
+          -4.163006,
+          1.1261871
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_54": {
+      "size": 4,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Creative": 4
+      },
+      "top_regions": {
+        "United Kingdom": 4
+      },
+      "geographic_spread": {
+        "lat_range": [
+          51.447254,
+          53.798286
+        ],
+        "lon_range": [
+          -3.94491,
+          -1.539937
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_55": {
+      "size": 4,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Classic cuisine": 4
+      },
+      "top_regions": {
+        "United Kingdom": 4
+      },
+      "geographic_spread": {
+        "lat_range": [
+          51.2736,
+          52.65737
+        ],
+        "lon_range": [
+          -1.8007996,
+          -0.66812
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_56": {
+      "size": 3,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Italian": 3
+      },
+      "top_regions": {
+        "United Kingdom": 3
+      },
+      "geographic_spread": {
+        "lat_range": [
+          51.48395,
+          51.51514
+        ],
+        "lon_range": [
+          -0.22423,
+          -0.14722
+        ]
+      },
+      "avg_value_score": 0.4761904761904761,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_57": {
+      "size": 12,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Modern cuisine": 12
+      },
+      "top_regions": {
+        "United Kingdom": 12
+      },
+      "geographic_spread": {
+        "lat_range": [
+          51.46336,
+          51.52711
+        ],
+        "lon_range": [
+          -0.19692,
+          -0.07774
+        ]
+      },
+      "avg_value_score": 0.4761904761904762,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_58": {
+      "size": 12,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Indian": 6,
+        "Chinese": 5,
+        "Seafood": 1
+      },
+      "top_regions": {
+        "United Kingdom": 12
+      },
+      "geographic_spread": {
+        "lat_range": [
+          51.49318,
+          51.51894
+        ],
+        "lon_range": [
+          -0.15731,
+          -0.08625
+        ]
+      },
+      "avg_value_score": 0.4761904761904762,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_59": {
+      "size": 4,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Creative French": 2,
+        "Creative British": 1,
+        "Modern French": 1
+      },
+      "top_regions": {
+        "United Kingdom": 4
+      },
+      "geographic_spread": {
+        "lat_range": [
+          51.502422,
+          51.518314
+        ],
+        "lon_range": [
+          -0.1522617,
+          -0.0788981
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_60": {
+      "size": 4,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Creative": 4
+      },
+      "top_regions": {
+        "United Kingdom": 4
+      },
+      "geographic_spread": {
+        "lat_range": [
+          51.509212,
+          51.519
+        ],
+        "lon_range": [
+          -0.15664,
+          -0.1334389
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_61": {
+      "size": 6,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Modern British": 6
+      },
+      "top_regions": {
+        "United Kingdom": 6
+      },
+      "geographic_spread": {
+        "lat_range": [
+          51.48291,
+          51.524086
+        ],
+        "lon_range": [
+          -0.19651,
+          -0.07704
+        ]
+      },
+      "avg_value_score": 0.4761904761904762,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_62": {
+      "size": 4,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "French": 4
+      },
+      "top_regions": {
+        "United Kingdom": 4
+      },
+      "geographic_spread": {
+        "lat_range": [
+          51.44607,
+          51.52032
+        ],
+        "lon_range": [
+          -0.16553,
+          -0.0781
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_63": {
+      "size": 4,
+      "avg_stars": 1.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Traditional British": 3,
+        "Scandinavian": 1
+      },
+      "top_regions": {
+        "United Kingdom": 4
+      },
+      "geographic_spread": {
+        "lat_range": [
+          51.49763,
+          51.52427
+        ],
+        "lon_range": [
+          -0.14556,
+          -0.0767681
+        ]
+      },
+      "avg_value_score": 0.47619047619047616,
+      "avg_luxury_score": 2.0,
+      "category": "普通餐厅"
+    },
+    "cluster_64": {
+      "size": 5,
+      "avg_stars": 2.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Contemporary": 5
+      },
+      "top_regions": {
+        "Chicago": 3,
+        "Washington DC": 2
+      },
+      "geographic_spread": {
+        "lat_range": [
+          38.880707,
+          41.886196
+        ],
+        "lon_range": [
+          -87.660736,
+          -76.99514
+        ]
+      },
+      "avg_value_score": 0.9523809523809523,
+      "avg_luxury_score": 4.0,
+      "category": "高性价比餐厅"
+    },
+    "cluster_65": {
+      "size": 5,
+      "avg_stars": 2.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Cantonese": 5
+      },
+      "top_regions": {
+        "Hong Kong": 5
+      },
+      "geographic_spread": {
+        "lat_range": [
+          22.281616,
+          22.30357
+        ],
+        "lon_range": [
+          114.156654,
+          114.1824
+        ]
+      },
+      "avg_value_score": 0.9523809523809523,
+      "avg_luxury_score": 4.0,
+      "category": "高性价比餐厅"
+    },
+    "cluster_66": {
+      "size": 6,
+      "avg_stars": 2.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "Contemporary": 6
+      },
+      "top_regions": {
+        "New York City": 6
+      },
+      "geographic_spread": {
+        "lat_range": [
+          40.70492,
+          40.76907
+        ],
+        "lon_range": [
+          -74.00565,
+          -73.93354
+        ]
+      },
+      "avg_value_score": 0.9523809523809524,
+      "avg_luxury_score": 4.0,
+      "category": "高性价比餐厅"
+    },
+    "cluster_67": {
+      "size": 3,
+      "avg_stars": 2.0,
+      "avg_price": 2.0,
+      "top_cuisines": {
+        "creative": 3
+      },
+      "top_regions": {
+        "Sao Paulo": 2,
+        "Rio de Janeiro": 1
+      },
+      "geographic_spread": {
+        "lat_range": [
+          -23.56618,
+          -22.98601
+        ],
+        "lon_range": [
+          -46.69083,
+          -43.22471
+        ]
+      },
+      "avg_value_score": 0.9523809523809522,
+      "avg_luxury_score": 4.0,
+      "category": "高性价比餐厅"
+    }
+  },
+  "total_restaurants": 695,
+  "feature_count": 34
+}

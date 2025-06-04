@@ -17,7 +17,8 @@ geopy==2.3.0
 # 数据可视化
 matplotlib==3.7.2
 seaborn==0.12.2
-plotly==5.15.0
+# plotly==5.15.0  # 可选依赖，用于交互式图表
+# plotly-kaleido==0.2.1  # 可选依赖
 
 # Web框架
 Flask==2.3.3

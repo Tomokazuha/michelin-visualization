@@ -373,27 +373,106 @@ def get_trends_analysis():
 def get_clustering_analysis():
     """获取聚类分析结果"""
     try:
-        # 获取真实的聚类分析数据
-        clustering_data = data_service.get_data('clustering')
+        # 优先加载高级聚类分析结果
+        advanced_clustering_path = PROCESSED_DIR / "advanced_clustering_results.joblib"
+        advanced_report_path = PROCESSED_DIR / "advanced_clustering_report.json"
         
+        clustering_data = None
+        
+        # 尝试加载高级聚类结果
+        if advanced_clustering_path.exists():
+            try:
+                import joblib
+                clustering_data = joblib.load(advanced_clustering_path)
+                logger.info("成功加载高级聚类分析结果")
+            except Exception as e:
+                logger.error(f"加载高级聚类结果失败: {e}")
+        
+        # 如果高级聚类结果不可用，加载传统结果
         if clustering_data is None:
-            logger.warning("聚类数据未加载，尝试加载聚类结果文件")
-            # 尝试直接从文件加载
-            clustering_path = PROCESSED_DIR / "clusters.joblib"
-            if clustering_path.exists():
-                try:
-                    import joblib
-                    clustering_data = joblib.load(clustering_path)
-                    logger.info("成功从文件加载聚类数据")
-                except Exception as e:
-                    logger.error(f"从文件加载聚类数据失败: {e}")
-                    clustering_data = None
+            clustering_data = data_service.get_data('clustering')
+            if clustering_data is None:
+                logger.warning("聚类数据未加载，尝试加载传统聚类结果文件")
+                clustering_path = PROCESSED_DIR / "clusters.joblib"
+                if clustering_path.exists():
+                    try:
+                        import joblib
+                        clustering_data = joblib.load(clustering_path)
+                        logger.info("成功从传统文件加载聚类数据")
+                    except Exception as e:
+                        logger.error(f"从文件加载聚类数据失败: {e}")
+                        clustering_data = None
         
-        if clustering_data:
-            # 从真实聚类数据中提取关键信息
+        # 处理高级聚类结果
+        if clustering_data and 'best_algorithm' in clustering_data:
             best_algorithm = clustering_data.get('best_algorithm')
             
-            if best_algorithm and 'clustering_experiments' in clustering_data:
+            # 高级聚类结果结构
+            if 'best_result' in clustering_data:
+                best_result = clustering_data['best_result']
+                
+                # 提取聚类信息
+                n_clusters = 0
+                silhouette_score = 0
+                labels = []
+                noise_ratio = 0
+                composite_score = 0
+                
+                if 'metrics' in best_result:
+                    metrics = best_result['metrics']
+                    n_clusters = metrics.get('n_clusters', 0)
+                    silhouette_score = metrics.get('silhouette_score', 0)
+                    noise_ratio = metrics.get('noise_ratio', 0)
+                    composite_score = metrics.get('composite_score', 0)
+                
+                if 'labels' in best_result:
+                    labels = best_result['labels']
+                
+                # 准备集群统计信息
+                cluster_stats = {}
+                business_insights = clustering_data.get('business_insights', {})
+                
+                for cluster_id, insights in business_insights.items():
+                    cluster_key = cluster_id.replace('cluster_', '')
+                    cluster_stats[cluster_key] = insights.get('size', 0)
+                
+                # 获取聚类标签
+                cluster_labels = []
+                if labels is not None:
+                    unique_labels = set(labels)
+                    if -1 in unique_labels:
+                        unique_labels.remove(-1)
+                    cluster_labels = [int(label) for label in unique_labels]
+                
+                # 转换标签为Python列表
+                python_labels = []
+                if hasattr(labels, 'tolist'):
+                    python_labels = [int(label) for label in labels.tolist()]
+                else:
+                    python_labels = [int(label) for label in labels]
+                
+                # 构建集群信息对象
+                cluster_info = {
+                    'algorithm': str(best_algorithm).upper(),
+                    'n_clusters': int(n_clusters),
+                    'silhouette_score': float(silhouette_score),
+                    'noise_ratio': float(noise_ratio),
+                    'composite_score': float(composite_score),
+                    'cluster_labels': cluster_labels,
+                    'labels': python_labels,
+                    'summary': f'使用优化{str(best_algorithm).upper()}算法成功识别出{int(n_clusters)}个高质量餐厅聚类，噪声比例{noise_ratio*100:.1f}%',
+                    'cluster_stats': cluster_stats,
+                    'business_insights': business_insights,
+                    'optimization_type': 'advanced'
+                }
+                
+                return jsonify({
+                    'success': True,
+                    'data': cluster_info
+                })
+            
+            # 传统聚类结果结构
+            elif 'clustering_experiments' in clustering_data:
                 experiments = clustering_data['clustering_experiments']
                 best_result = experiments.get(best_algorithm, {}).get('best_result', {})
                 
@@ -404,32 +483,20 @@ def get_clustering_analysis():
                 
                 if 'labels' in best_result:
                     labels = best_result['labels']
-                    # 计算实际聚类数(排除噪声点)
                     n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
                 
                 if 'silhouette_score' in best_result:
                     silhouette_score = best_result['silhouette_score']
                 
-                # 从可视化数据中提取PCA结果(如果有)
-                pca_data = None
-                if 'visualizations' in clustering_data and 'pca' in clustering_data['visualizations']:
-                    pca_vis = clustering_data['visualizations']['pca']
-                    pca_data = pca_vis.get('data')
-                    # 确保PCA数据是Python列表
-                    if hasattr(pca_data, 'tolist'):
-                        pca_data = pca_data.tolist()
-                
-                # 准备集群统计信息 - 确保使用Python原生类型
+                # 准备集群统计信息
                 cluster_stats = {}
                 if 'cluster_analysis' in clustering_data and 'cluster_sizes' in clustering_data['cluster_analysis']:
                     for key, value in clustering_data['cluster_analysis']['cluster_sizes'].items():
-                        # 转换可能的numpy类型到Python原生类型
                         cluster_stats[str(key)] = int(value)
                 
-                # 获取聚类标签 - 确保是Python列表且元素是Python原生类型
+                # 获取聚类标签
                 cluster_labels = []
                 if labels is not None:
-                    # 获取唯一标签，排除噪声点-1
                     unique_labels = set(labels)
                     if -1 in unique_labels:
                         unique_labels.remove(-1)
@@ -448,10 +515,10 @@ def get_clustering_analysis():
                     'n_clusters': int(n_clusters),
                     'silhouette_score': float(silhouette_score),
                     'cluster_labels': cluster_labels,
-                    'pca_data': pca_data,
                     'labels': python_labels,
                     'summary': f'使用{str(best_algorithm).upper()}算法成功识别出{int(n_clusters)}个不同的餐厅聚类',
-                    'cluster_stats': cluster_stats
+                    'cluster_stats': cluster_stats,
+                    'optimization_type': 'traditional'
                 }
                 
                 return jsonify({
@@ -465,7 +532,8 @@ def get_clustering_analysis():
             'algorithm': 'DBSCAN',
             'n_clusters': 28,
             'silhouette_score': 0.436,
-            'summary': '聚类分析数据（默认值）- 无法获取真实聚类结果'
+            'summary': '聚类分析数据（默认值）- 无法获取真实聚类结果',
+            'optimization_type': 'default'
         }
         
         return jsonify({
@@ -483,7 +551,8 @@ def get_clustering_analysis():
                 'algorithm': 'DBSCAN',
                 'n_clusters': 28,
                 'silhouette_score': 0.436,
-                'summary': '聚类分析数据获取失败'
+                'summary': '聚类分析数据获取失败',
+                'optimization_type': 'error'
             }
         })
 
