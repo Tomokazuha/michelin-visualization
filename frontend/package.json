@@ -7,7 +7,13 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "serve": "vite preview --port 3000"
+    "serve": "vite preview --port 3000",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "lint": "eslint src --ext .vue,.js,.ts",
+    "lint:fix": "eslint src --ext .vue,.js,.ts --fix",
+    "format": "prettier --write src/**/*.{vue,js,ts,css,scss}"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.1.0",
@@ -26,10 +32,16 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.3.4",
+    "@vue/test-utils": "^2.4.1",
+    "eslint": "^8.49.0",
+    "eslint-plugin-vue": "^9.17.0",
+    "jsdom": "^22.1.0",
+    "prettier": "^3.0.3",
     "sass": "^1.66.1",
     "unplugin-auto-import": "^0.16.6",
     "unplugin-vue-components": "^0.25.2",
-    "vite": "^4.4.9"
+    "vite": "^4.4.9",
+    "vitest": "^0.34.6"
   },
   "keywords": [
     "vue",

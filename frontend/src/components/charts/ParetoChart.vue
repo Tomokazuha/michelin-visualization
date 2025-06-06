@@ -1,3 +1,44 @@
+<!--
+米其林餐厅帕累托分析图表组件 (ParetoChart)
+
+功能特性：
+1. 基于ECharts的帕累托图（柱状图+折线图）可视化，实现80/20法则分析
+2. 多维度分析：地区分布、菜系分布、年份分布、价格分布
+3. 累计百分比显示：通过折线图展示数据的累计分布情况
+4. 星级筛选：支持按1-3星级别进行数据过滤分析
+5. 关键洞察面板：自动计算并显示重要统计指标
+6. 双轴图表：左轴显示数量，右轴显示百分比
+7. 交互式分析：支持点击分析项目获取详细信息
+
+帕累托原理应用：
+- 识别20%的重要因素对80%结果的影响
+- 分析餐厅分布的集中度和分散程度
+- 发现主要的地区、菜系、年份等分布特征
+- 为业务决策提供数据支撑
+
+分析维度：
+- region: 按地区统计餐厅数量，分析地理分布集中度
+- cuisine: 按菜系类型统计，识别主流菜系
+- year: 按获奖年份统计，分析时间发展趋势
+- price: 按价格等级统计，分析价位分布特征
+
+技术实现：
+- Vue 3 Composition API + Reactive Analysis
+- ECharts Bar + Line 双轴混合图表
+- 数据排序和累计百分比计算算法
+- 关键指标自动分析和洞察生成
+- 响应式主题切换和样式适配
+
+数据流程：
+props.data → 星级筛选 → 维度聚合 → 排序 → 累计计算 → 洞察分析 → 图表渲染
+用户交互 → 分析类型/筛选条件变更 → 重新计算 → 图表更新 → emit事件
+
+关键指标：
+- TOP 20%数量：前20%项目的数量
+- 占比：前20%项目占总体的百分比
+- 达到80%需要：累计达到80%所需的项目数
+- 集中度：数据分布的集中程度评级
+-->
 <template>
   <div class="pareto-chart">
     <!-- 控制面板 -->
@@ -61,20 +102,45 @@ import * as echarts from 'echarts'
 import { useDataStore } from '@/store/data'
 import { useAppStore } from '@/store/app'
 
-// Props
+/**
+ * 组件Props定义
+ * @typedef {Object} Props
+ * @property {number} height - 图表高度
+ * @property {Array} data - 餐厅数据数组
+ */
 const props = defineProps({
   height: {
     type: Number,
-    default: 500
+    default: 500,
+    validator: (value) => value >= 300 && value <= 1000
   },
   data: {
     type: Array,
-    default: () => []
+    default: () => [],
+    validator: (value) => {
+      if (!Array.isArray(value)) return false
+      return value.every(item => 
+        typeof item === 'object' && 
+        item !== null &&
+        typeof item.stars === 'number' &&
+        item.stars >= 1 && item.stars <= 3
+      )
+    }
   }
 })
 
-// Emits
-const emit = defineEmits(['item-click'])
+/**
+ * 组件事件定义
+ * @event item-click - 分析项目点击事件，传递点击的项目数据
+ */
+const emit = defineEmits({
+  'item-click': (itemData) => {
+    return typeof itemData === 'object' && 
+           itemData !== null && 
+           'name' in itemData && 
+           'value' in itemData
+  }
+})
 
 // Store
 const dataStore = useDataStore()
@@ -111,12 +177,23 @@ const filteredData = computed(() => {
   return data
 })
 
-// 生成帕累托数据
+/**
+ * 生成帕累托分析数据
+ * 实现80/20法则的数据处理和分析
+ * 
+ * @returns {Object} 包含categories, values, percentages的分析结果
+ * 
+ * 处理步骤：
+ * 1. 根据分析类型对数据进行分组统计
+ * 2. 按数值大小降序排序（帕累托排序）
+ * 3. 计算累计百分比和关键指标
+ * 4. 生成洞察分析结果
+ */
 const generateParetoData = () => {
   const data = filteredData.value
   if (data.length === 0) return { categories: [], values: [], percentages: [] }
   
-  // 根据分析类型统计数据
+  // 根据分析类型进行数据聚合统计
   const countMap = {}
   
   data.forEach(restaurant => {

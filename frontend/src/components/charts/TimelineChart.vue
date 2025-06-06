@@ -1,3 +1,37 @@
+<!--
+米其林餐厅时间线发展图表组件 (TimelineChart)
+
+功能特性：
+1. 基于ECharts的时间序列可视化，展示餐厅发展历程
+2. 多种视图模式：年度统计、累计增长、趋势分析
+3. 星级分层显示：支持1-3星餐厅的独立或组合展示
+4. 交互式时间轴：支持范围选择和时间点缩放
+5. 自动播放功能：动态展示时间发展过程
+6. 统计数据面板：显示关键指标和变化趋势
+7. 移动平均计算：平滑趋势线展示
+
+视图模式详解：
+- year: 按年份柱状图显示，支持星级堆叠
+- cumulative: 累计增长折线图，显示总体发展趋势  
+- trend: 趋势分析模式，包含原始数据点和移动平均线
+
+技术实现：
+- Vue 3 Composition API + Reactive State
+- ECharts Timeline + Bar/Line/Scatter 混合图表
+- 时间序列数据处理和聚合算法
+- 移动平均和趋势分析计算
+- 响应式布局和自适应缩放
+
+数据流程：
+props.data → processTimelineData → 视图模式处理 → ECharts配置 → 图表渲染
+用户交互 → 模式切换/星级筛选 → 数据重新计算 → 图表更新 → emit事件
+
+统计指标：
+- 最早年份：数据集中的起始年份
+- 年均增长：按年计算的平均增长率
+- 峰值年份：新增餐厅数量最多的年份
+- 最新变化：最近一年的变化情况
+-->
 <template>
   <div class="timeline-container">
     <div class="timeline-header">
@@ -34,30 +68,72 @@ import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import * as echarts from 'echarts'
 import { useDataStore } from '@/store/data'
 
+/**
+ * 组件Props定义
+ * @typedef {Object} Props
+ * @property {string} title - 图表标题
+ * @property {number} height - 图表高度
+ * @property {Array} data - 时间序列餐厅数据
+ * @property {number} startYear - 起始年份
+ * @property {number} endYear - 结束年份
+ */
 const props = defineProps({
   title: {
     type: String,
-    default: '米其林餐厅时间发展'
+    default: '米其林餐厅时间发展',
+    validator: (value) => typeof value === 'string' && value.length <= 50
   },
   height: {
     type: Number,
-    default: 400
+    default: 400,
+    validator: (value) => value >= 200 && value <= 800
   },
   data: {
     type: Array,
-    default: () => []
+    default: () => [],
+    validator: (value) => {
+      if (!Array.isArray(value)) return false
+      return value.every(item => 
+        typeof item === 'object' && 
+        item !== null &&
+        'year' in item &&
+        'stars' in item &&
+        !isNaN(parseInt(item.year)) &&
+        [1, 2, 3].includes(item.stars)
+      )
+    }
   },
   startYear: {
     type: Number,
-    default: 2000
+    default: 2000,
+    validator: (value) => value >= 1900 && value <= new Date().getFullYear()
   },
   endYear: {
     type: Number,
-    default: new Date().getFullYear()
+    default: new Date().getFullYear(),
+    validator: (value) => value >= 2000 && value <= new Date().getFullYear() + 5
   }
 })
 
-const emit = defineEmits(['yearSelect', 'periodSelect', 'yearChange'])
+/**
+ * 组件事件定义
+ * @event yearSelect - 年份选择事件，传递选中的年份
+ * @event periodSelect - 时间段选择事件，传递起止年份
+ * @event yearChange - 年份变更事件，传递当前播放的年份
+ */
+const emit = defineEmits({
+  yearSelect: (year) => {
+    return typeof year === 'number' && year >= 1900 && year <= 2030
+  },
+  periodSelect: (startYear, endYear) => {
+    return typeof startYear === 'number' && 
+           typeof endYear === 'number' && 
+           startYear <= endYear
+  },
+  yearChange: (year) => {
+    return typeof year === 'number' && year >= 1900 && year <= 2030
+  }
+})
 
 const dataStore = useDataStore()
 const timelineRef = ref(null)
@@ -82,16 +158,28 @@ const statistics = ref([
   { label: '最新变化', value: '+23', change: '2024', trend: 'up' }
 ])
 
-// 处理时间线数据
+/**
+ * 处理时间线数据，进行数据聚合和格式化
+ * 将餐厅数据按年份和星级进行分组统计
+ * 
+ * @param {Array} restaurants - 餐厅数据数组
+ * @returns {Object} 包含处理后的时间序列数据和图表配置
+ * 
+ * 处理步骤：
+ * 1. 初始化年份数据结构
+ * 2. 按年份和星级进行数据聚合
+ * 3. 根据视图模式生成对应的图表系列
+ * 4. 应用星级筛选和颜色配置
+ */
 const processTimelineData = (restaurants) => {
   const yearData = new Map()
   const starColors = {
-    1: '#D4AF37',
-    2: '#DC143C', 
-    3: '#40E0D0'
+    1: '#D4AF37',  // 一星：金色
+    2: '#DC143C',  // 二星：深红色
+    3: '#40E0D0'   // 三星：青绿色
   }
   
-  // 初始化年份数据
+  // 初始化年份数据结构，确保所有年份都有完整的数据
   for (let year = props.startYear; year <= props.endYear; year++) {
     yearData.set(year, { 1: 0, 2: 0, 3: 0, total: 0 })
   }

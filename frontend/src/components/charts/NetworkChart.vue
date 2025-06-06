@@ -1,3 +1,38 @@
+<!--
+米其林餐厅关系网络图组件 (NetworkChart)
+
+功能特性：
+1. 基于ECharts的力导向图可视化，展示餐厅间的关联关系
+2. 多种关系类型：菜系关联、地理邻近、价格相似、星级相同、同期获奖
+3. 交互式节点控制：可调节节点大小、切换标签显示
+4. 动态布局算法：自动计算节点位置和连接关系
+5. 星级差异化显示：不同星级餐厅使用不同颜色和大小
+6. 关系强度可视化：连线粗细表示关系密切程度
+7. 节点和连线交互：支持点击选择和悬停详情
+
+关系类型详解：
+- cuisine: 基于菜系类型的关联（相同菜系餐厅相连）
+- location: 基于地理位置的邻近关系（同城或50km内）
+- price: 基于价格等级的相似性（相同价位餐厅）
+- star: 基于米其林星级的分类（同星级餐厅）
+- year: 基于获奖年份的时间关联（同年获奖餐厅）
+
+技术实现：
+- Vue 3 Composition API + Reactive Network State
+- ECharts Force Graph 力导向布局算法
+- 地理距离计算（经纬度坐标）
+- 图论算法实现节点连接逻辑
+- 动态节点过滤和渲染优化
+
+数据流程：
+props.data → generateNetworkData → 关系计算 → 力导向布局 → 网络图渲染
+用户交互 → 关系类型切换/节点控制 → 重新计算连接 → 图表更新
+
+性能优化：
+- 节点数量限制（maxNodes）避免性能问题
+- 连接关系过滤减少计算复杂度
+- 响应式布局和自适应缩放
+-->
 <template>
   <div class="network-container">
     <div class="network-header">
@@ -50,26 +85,69 @@ import * as echarts from 'echarts'
 import { useDataStore } from '@/store/data'
 import { waitForContainer, ensureContainerSize, createVisibilityObserver, MICHELIN_COLORS } from '@/utils/chartHelpers'
 
+/**
+ * 组件Props定义
+ * @typedef {Object} Props
+ * @property {string} title - 网络图标题
+ * @property {number} height - 图表高度
+ * @property {Array} data - 餐厅节点数据
+ * @property {number} maxNodes - 最大节点数量（性能控制）
+ */
 const props = defineProps({
   title: {
     type: String,
-    default: '米其林餐厅关系网络'
+    default: '米其林餐厅关系网络',
+    validator: (value) => typeof value === 'string' && value.length <= 50
   },
   height: {
     type: Number,
-    default: 600
+    default: 600,
+    validator: (value) => value >= 300 && value <= 1200
   },
   data: {
     type: Array,
-    default: () => []
+    default: () => [],
+    validator: (value) => {
+      if (!Array.isArray(value)) return false
+      return value.every(item => 
+        typeof item === 'object' && 
+        item !== null &&
+        'restaurant_name' in item &&
+        typeof item.stars === 'number' &&
+        item.stars >= 1 && item.stars <= 3
+      )
+    }
   },
   maxNodes: {
     type: Number,
-    default: 100
+    default: 100,
+    validator: (value) => value >= 10 && value <= 500
   }
 })
 
-const emit = defineEmits(['nodeClick', 'linkClick', 'relationshipChange'])
+/**
+ * 组件事件定义
+ * @event nodeClick - 节点点击事件，传递餐厅节点数据
+ * @event linkClick - 连线点击事件，传递连接关系数据
+ * @event relationshipChange - 关系类型变更事件，传递新的关系类型
+ */
+const emit = defineEmits({
+  nodeClick: (nodeData) => {
+    return typeof nodeData === 'object' && 
+           nodeData !== null && 
+           'restaurant_name' in nodeData
+  },
+  linkClick: (linkData) => {
+    return typeof linkData === 'object' && 
+           linkData !== null && 
+           'source' in linkData && 
+           'target' in linkData
+  },
+  relationshipChange: (relationshipType) => {
+    return typeof relationshipType === 'string' && 
+           ['cuisine', 'location', 'price', 'star', 'year'].includes(relationshipType)
+  }
+})
 
 const dataStore = useDataStore()
 const networkRef = ref(null)
@@ -92,13 +170,26 @@ const legendItems = ref([
   { value: 3, label: '三星餐厅', color: MICHELIN_COLORS[3] }
 ])
 
-// 计算节点和边的数据
+/**
+ * 生成网络图的节点和边数据
+ * 根据选择的关系类型计算餐厅间的连接关系
+ * 
+ * @param {Array} restaurants - 餐厅数据数组
+ * @param {string} type - 关系类型 ('cuisine'|'location'|'price'|'star'|'year')
+ * @returns {Object} 包含nodes和links的网络数据对象
+ * 
+ * 算法逻辑：
+ * 1. 创建节点：每个餐厅对应一个节点，大小和颜色基于星级
+ * 2. 计算连接：根据关系类型判断餐厅间是否应该连接
+ * 3. 关系强度：连线粗细表示关系的密切程度
+ * 4. 性能优化：限制节点数量避免计算复杂度过高
+ */
 const generateNetworkData = (restaurants, type) => {
   const nodes = []
   const links = []
   const nodeMap = new Map()
   
-  // 限制餐厅数量避免图表过于复杂
+  // 限制餐厅数量避免图表过于复杂，提高渲染性能
   const limitedRestaurants = restaurants.slice(0, props.maxNodes)
   
   // 创建节点

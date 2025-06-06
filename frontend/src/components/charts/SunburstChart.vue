@@ -1,3 +1,37 @@
+<!--
+米其林餐厅旭日图组件 (SunburstChart)
+
+功能特性：
+1. 基于ECharts的旭日图可视化，展示层次化数据结构
+2. 支持多层级钻取：全球 → 地区 → 城市 → 餐厅
+3. 可配置的颜色方案：按星级、价格、菜系分类着色
+4. 交互式缩放控制：全局视图、地区视图、城市视图
+5. 面包屑导航：显示当前层级路径，支持向上钻取
+6. 动态标签切换：可控制标签显示/隐藏
+7. 节点点击和悬停交互
+
+数据结构：
+- 根节点：全球米其林餐厅
+- 二级节点：地区 (region)
+- 三级节点：城市 (city)  
+- 四级节点：具体餐厅 (restaurant)
+
+技术实现：
+- Vue 3 Composition API
+- ECharts Sunburst 图表
+- 层次化数据建模
+- 响应式数据流管理
+- 事件委托和状态同步
+
+数据流程：
+props.data → generateSunburstData → ECharts配置 → 旭日图渲染
+用户交互 → 事件处理 → 层级变更 → emit事件 → 父组件响应
+
+颜色方案：
+- stars: 按米其林星级着色 (1星金色, 2星红色, 3星青色)
+- price: 按价格等级着色 (€绿色, €€黄色, €€€橙色, €€€€红色)
+- cuisine: 按菜系类型着色 (法式蓝色, 意式绿色, 日式红色等)
+-->
 <template>
   <div class="sunburst-container">
     <div class="sunburst-header">
@@ -42,26 +76,68 @@ import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import { useDataStore } from '@/store/data'
 
+/**
+ * 组件Props定义
+ * @typedef {Object} Props
+ * @property {string} title - 图表标题
+ * @property {number} height - 图表高度
+ * @property {Array} data - 餐厅数据数组
+ * @property {string} colorScheme - 颜色方案类型
+ */
 const props = defineProps({
   title: {
     type: String,
-    default: '米其林餐厅层次分布'
+    default: '米其林餐厅层次分布',
+    validator: (value) => typeof value === 'string' && value.length <= 50
   },
   height: {
     type: Number,
-    default: 500
+    default: 500,
+    validator: (value) => value >= 200 && value <= 1000
   },
   data: {
     type: Array,
-    default: () => []
+    default: () => [],
+    validator: (value) => {
+      // 验证数据数组的每个元素都包含必要的字段
+      if (!Array.isArray(value)) return false
+      return value.every(item => 
+        typeof item === 'object' && 
+        item !== null &&
+        'restaurant_name' in item &&
+        'region' in item &&
+        'city' in item &&
+        typeof item.stars === 'number' &&
+        item.stars >= 1 && item.stars <= 3
+      )
+    }
   },
   colorScheme: {
     type: String,
-    default: 'stars' // 'stars', 'price', 'cuisine'
+    default: 'stars',
+    validator: (value) => ['stars', 'price', 'cuisine'].includes(value)
   }
 })
 
-const emit = defineEmits(['nodeClick', 'levelChange'])
+/**
+ * 组件事件定义
+ * @event nodeClick - 节点点击事件，传递点击的节点数据
+ * @event levelChange - 层级变更事件，传递当前层级信息
+ */
+const emit = defineEmits({
+  nodeClick: (node) => {
+    // 验证事件参数
+    return typeof node === 'object' && 
+           node !== null && 
+           'name' in node && 
+           'value' in node
+  },
+  levelChange: (level) => {
+    // 验证层级参数
+    return typeof level === 'string' && 
+           ['all', 'region', 'city'].includes(level)
+  }
+})
 
 const dataStore = useDataStore()
 const sunburstRef = ref(null)
@@ -100,7 +176,19 @@ const colorSchemes = {
   }
 }
 
-// 处理数据生成旭日图数据结构
+/**
+ * 生成旭日图的层次化数据结构
+ * 将平面的餐厅数据转换为树状结构，用于ECharts旭日图显示
+ * 
+ * @param {Array} restaurants - 餐厅数据数组
+ * @returns {Object} 树状结构的数据对象
+ * 
+ * 数据层级：
+ * Level 0: 根节点 (全球)
+ * Level 1: 地区节点 (region)
+ * Level 2: 城市节点 (city)
+ * Level 3: 餐厅节点 (restaurant)
+ */
 const generateSunburstData = (restaurants) => {
   const root = {
     name: '全球米其林餐厅',
@@ -110,6 +198,7 @@ const generateSunburstData = (restaurants) => {
   
   const totalRestaurants = restaurants.length
   
+  // 使用Map提高查找效率
   const regionMap = new Map()
   
   restaurants.forEach(restaurant => {
@@ -170,7 +259,11 @@ const generateSunburstData = (restaurants) => {
   return root
 }
 
-// 获取节点颜色
+/**
+ * 根据配置的颜色方案获取节点颜色
+ * @param {Object} restaurant - 餐厅对象
+ * @returns {string} 十六进制颜色值
+ */
 const getNodeColor = (restaurant) => {
   switch (props.colorScheme) {
     case 'stars':
@@ -185,17 +278,28 @@ const getNodeColor = (restaurant) => {
   }
 }
 
-// 获取地区颜色
+/**
+ * 获取地区级别的节点颜色
+ * 使用地区名称的哈希值来确保颜色的一致性
+ * @param {string} region - 地区名称
+ * @returns {string} 十六进制颜色值
+ */
 const getRegionColor = (region) => {
   const colors = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c']
   const index = region.charCodeAt(0) % colors.length
   return colors[index]
 }
 
-// 获取城市颜色
+/**
+ * 获取城市级别的节点颜色
+ * 基于所属地区的颜色，稍微调整亮度以产生层次感
+ * @param {string} city - 城市名称  
+ * @param {string} region - 所属地区名称
+ * @returns {string} 十六进制颜色值
+ */
 const getCityColor = (city, region) => {
   const baseColor = getRegionColor(region)
-  // 稍微调整亮度
+  // 稍微调整亮度，产生渐变效果
   return adjustColorBrightness(baseColor, 20)
 }
 

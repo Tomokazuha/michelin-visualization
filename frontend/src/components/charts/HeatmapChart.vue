@@ -1,3 +1,47 @@
+<!--
+米其林餐厅全球热力分布图组件 (HeatmapChart)
+
+功能特性：
+1. 基于ECharts的地理热力图可视化，展示餐厅的地理分布密度
+2. 多维度热力分析：全部餐厅、星级分层、价格分布、菜系多样性
+3. 可调节热力半径：动态控制热力点的影响范围
+4. 星级强度差异：不同星级餐厅具有不同的热力强度
+5. 地理坐标映射：基于经纬度数据生成精确的地理位置
+6. 渐变色彩映射：从低密度到高密度的连续色彩过渡
+7. 交互式地图缩放：支持地图缩放和平移操作
+
+热力数据类型：
+- all: 显示所有餐厅的分布密度，星级越高强度越大
+- one_star: 仅显示一星餐厅的分布热力
+- two_stars: 仅显示二星餐厅的分布热力，强度1.5倍
+- three_stars: 仅显示三星餐厅的分布热力，强度2倍
+- price: 基于价格等级的热力分布（€到€€€€）
+- cuisine: 基于菜系多样性的热力分析
+
+技术实现：
+- Vue 3 Composition API + Geographic Visualization
+- ECharts Geographic + Heatmap 热力图层
+- 地理坐标系统和坐标转换
+- 密度计算和强度映射算法
+- 多层次数据聚合和渲染优化
+
+数据处理流程：
+props.data → 坐标验证 → 类型筛选 → 强度计算 → 位置偏移 → 热力数据生成
+地理数据 → ECharts地图投影 → 热力层渲染 → 交互事件处理
+
+性能优化：
+- 坐标有效性验证避免渲染错误
+- 位置随机偏移避免点位完全重叠
+- 容器就绪状态检测确保正确渲染
+- 图表实例管理防止内存泄漏
+
+强度映射规则：
+- 一星餐厅：基础强度1.0
+- 二星餐厅：强度1.5倍
+- 三星餐厅：强度2.0倍  
+- 价格等级：€(1.0) → €€€€(2.5)
+- 菜系多样性：最多5种菜系归一化到2.0强度
+-->
 <template>
   <div class="heatmap-container">
     <div class="heatmap-header">
@@ -43,22 +87,57 @@ import * as echarts from 'echarts'
 import 'echarts/extension/bmap/bmap'
 import { useDataStore } from '@/store/data'
 
+/**
+ * 组件Props定义
+ * @typedef {Object} Props
+ * @property {string} title - 热力图标题
+ * @property {number} height - 图表高度
+ * @property {Array} data - 餐厅地理数据数组
+ */
 const props = defineProps({
   title: {
     type: String,
-    default: '米其林餐厅全球热力分布'
+    default: '米其林餐厅全球热力分布',
+    validator: (value) => typeof value === 'string' && value.length <= 50
   },
   height: {
     type: Number,
-    default: 600
+    default: 600,
+    validator: (value) => value >= 400 && value <= 1200
   },
   data: {
     type: Array,
-    default: () => []
+    default: () => [],
+    validator: (value) => {
+      if (!Array.isArray(value)) return false
+      return value.every(item => 
+        typeof item === 'object' && 
+        item !== null &&
+        'latitude' in item &&
+        'longitude' in item &&
+        !isNaN(parseFloat(item.latitude)) &&
+        !isNaN(parseFloat(item.longitude))
+      )
+    }
   }
 })
 
-const emit = defineEmits(['regionSelect', 'dataTypeChange'])
+/**
+ * 组件事件定义
+ * @event regionSelect - 地区选择事件，传递选中地区的热力数据
+ * @event dataTypeChange - 数据类型变更事件，传递新的数据类型
+ */
+const emit = defineEmits({
+  regionSelect: (regionData) => {
+    return typeof regionData === 'object' && 
+           regionData !== null &&
+           'coordinates' in regionData
+  },
+  dataTypeChange: (dataType) => {
+    return typeof dataType === 'string' && 
+           ['all', 'one_star', 'two_stars', 'three_stars', 'price', 'cuisine'].includes(dataType)
+  }
+})
 
 const dataStore = useDataStore()
 const heatmapRef = ref(null)
@@ -75,7 +154,20 @@ const dataTypes = [
   { value: 'cuisine', label: '菜系多样性' }
 ]
 
-// 处理数据生成热力图数据
+/**
+ * 生成热力图数据
+ * 根据不同的数据类型处理餐厅数据，生成对应的热力强度
+ * 
+ * @param {Array} restaurants - 餐厅数据数组
+ * @param {string} type - 热力数据类型
+ * @returns {Array} 热力图数据数组 [[lng, lat, intensity], ...]
+ * 
+ * 处理逻辑：
+ * 1. 验证地理坐标的有效性
+ * 2. 根据数据类型计算热力强度
+ * 3. 添加位置偏移避免点位重叠
+ * 4. 特殊处理菜系多样性数据
+ */
 const generateHeatmapData = (restaurants, type) => {
   const heatData = []
   const processedRegions = new Map()
@@ -84,6 +176,7 @@ const generateHeatmapData = (restaurants, type) => {
     const lat = parseFloat(restaurant.latitude)
     const lng = parseFloat(restaurant.longitude)
     
+    // 验证地理坐标有效性
     if (!isNaN(lat) && !isNaN(lng)) {
       let intensity = 1
       
