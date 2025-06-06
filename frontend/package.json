@@ -23,6 +23,8 @@
     "echarts-gl": "^2.0.9",
     "element-plus": "^2.3.12",
     "leaflet": "^1.9.4",
+    "leaflet.heat": "^0.2.0",
+    "leaflet.markercluster": "^1.5.3",
     "lodash": "^4.17.21",
     "pinia": "^2.1.6",
     "vue": "^3.3.4",

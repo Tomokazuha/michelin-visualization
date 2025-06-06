@@ -8,100 +8,81 @@
       </div>
 
       <!-- 统计卡片 -->
-      <div class="stats-grid" v-if="summary">
-        <div class="stat-card">
-          <div class="stat-number">{{ summary.total_restaurants }}</div>
-          <div class="stat-label">总餐厅数</div>
-        </div>
+      <div class="stats-grid">
+        <InteractiveStatCard
+          label="总餐厅数"
+          :value="summary?.total_restaurants || 0"
+          icon="Restaurant"
+          icon-color="#3b82f6"
+          :loading="loading"
+          clickable
+          subtitle="全球米其林星级餐厅"
+          @click="$router.push('/explore')"
+        />
         
-        <div class="stat-card">
-          <div class="stat-number">{{ summary.regions }}</div>
-          <div class="stat-label">覆盖地区</div>
-        </div>
+        <InteractiveStatCard
+          label="覆盖地区"
+          :value="summary?.regions || 0"
+          icon="Location"
+          icon-color="#10b981"
+          :loading="loading"
+          clickable
+          subtitle="分布在不同地区"
+          @click="$router.push('/map')"
+        />
         
-        <div class="stat-card">
-          <div class="stat-number">{{ summary.cities }}</div>
-          <div class="stat-label">覆盖城市</div>
-        </div>
+        <InteractiveStatCard
+          label="覆盖城市"
+          :value="summary?.cities || 0"
+          icon="OfficeBuilding"
+          icon-color="#f59e0b"
+          :loading="loading"
+          clickable
+          subtitle="遍布全球主要城市"
+          @click="$router.push('/map')"
+        />
         
-        <div class="stat-card">
-          <div class="stat-number">{{ summary.cuisines }}</div>
-          <div class="stat-label">菜系类型</div>
-        </div>
+        <InteractiveStatCard
+          label="菜系类型"
+          :value="summary?.cuisines || 0"
+          icon="Bowl"
+          icon-color="#8b5cf6"
+          :loading="loading"
+          clickable
+          subtitle="丰富多样的美食文化"
+          @click="$router.push('/analytics')"
+        />
       </div>
 
       <!-- 图表区域 -->
       <div class="charts-grid">
         <!-- 星级分布图 -->
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">星级分布</h3>
-          </div>
-          <div class="card-body">
-            <div v-if="loading" class="loading-container">
-              <el-icon class="is-loading"><Loading /></el-icon>
-              <span class="ml-2">加载中...</span>
-            </div>
-            <div v-else-if="starDistribution" class="chart-container">
-              <div class="chart star-chart">
-                <div 
-                  v-for="(count, star) in starDistribution" 
-                  :key="star"
-                  class="chart-item star-item"
-                >
-                  <div class="chart-label star-label">
-                    <span class="star-icon">{{ star }}</span>
-                    <span class="star-text">星</span>
-                  </div>
-                  <div class="chart-bar star-bar">
-                    <div 
-                      class="chart-fill star-fill" 
-                      :style="{ width: getMaxPercentage(count, maxStarValue, 70) + '%' }"
-                    >
-                      <span class="bar-value">{{ getPercentage(count, totalRestaurants) }}%</span>
-                    </div>
-                  </div>
-                  <div class="chart-count star-count">{{ count }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <InteractiveBarChart
+          :data="starDistribution"
+          title="星级分布"
+          subtitle="不同星级餐厅的数量分布情况"
+          :loading="loading"
+          :error="error?.type === 'fetch_summary' ? error : null"
+          :color-scheme="['#6366f1', '#8b5cf6', '#ec4899']"
+          :label-translator="starLabelTranslator"
+          show-legend
+          @item-click="handleStarClick"
+          @retry="retryFetch"
+        />
 
         <!-- 价格分布图 -->
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">价格分布</h3>
-          </div>
-          <div class="card-body">
-            <div v-if="loading" class="loading-container">
-              <el-icon class="is-loading"><Loading /></el-icon>
-              <span class="ml-2">加载中...</span>
-            </div>
-            <div v-else-if="priceDistribution" class="chart-container">
-              <div class="chart price-chart">
-                <div 
-                  v-for="(count, price) in priceDistributionTranslated" 
-                  :key="price"
-                  class="chart-item price-item"
-                >
-                  <div class="chart-label price-label" :title="getPriceOriginal(price)">
-                    {{ price }}
-                  </div>
-                  <div class="chart-bar price-bar">
-                    <div 
-                      class="chart-fill price-fill" 
-                      :style="{ width: getMaxPercentage(count, maxPriceValue, 70) + '%' }"
-                    >
-                      <span class="bar-value">{{ getPercentage(count, totalRestaurants) }}%</span>
-                    </div>
-                  </div>
-                  <div class="chart-count price-count">{{ count }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <InteractiveBarChart
+          :data="priceDistribution"
+          title="价格分布"
+          subtitle="不同价格区间餐厅的分布比例"
+          :loading="loading"
+          :error="error?.type === 'fetch_summary' ? error : null"
+          :color-scheme="['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']"
+          :label-translator="priceLabelTranslator"
+          show-legend
+          @item-click="handlePriceClick"
+          @retry="retryFetch"
+        />
       </div>
 
       <!-- 快速操作 -->
@@ -148,16 +129,40 @@
 
 <script setup>
 import { computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useDataStore } from '@/store/data'
 import { Loading, Location, TrendCharts, Search } from '@element-plus/icons-vue'
+import InteractiveStatCard from '@/components/common/InteractiveStatCard.vue'
+import InteractiveBarChart from '@/components/charts/InteractiveBarChart.vue'
 
+const router = useRouter()
 const dataStore = useDataStore()
 
 // 计算属性
 const summary = computed(() => dataStore.summary)
 const loading = computed(() => dataStore.loading)
+const error = computed(() => dataStore.error)
 const starDistribution = computed(() => summary.value?.star_distribution)
-const priceDistribution = computed(() => summary.value?.price_distribution)
+
+// 价格分布数据按指定顺序排列
+const priceDistribution = computed(() => {
+  const rawData = summary.value?.price_distribution
+  if (!rawData) return null
+  
+  // 定义价格等级的顺序
+  const priceOrder = ['Budget', 'Moderate', 'Expensive', 'Very Expensive', 'Luxury', 'Unknown']
+  
+  // 按指定顺序重新组织数据
+  const orderedData = {}
+  priceOrder.forEach(priceLevel => {
+    if (rawData[priceLevel] !== undefined) {
+      orderedData[priceLevel] = rawData[priceLevel]
+    }
+  })
+  
+  return orderedData
+})
+
 const totalRestaurants = computed(() => summary.value?.total_restaurants || 0)
 
 // 计算最大值，用于控制条形图显示
@@ -171,50 +176,46 @@ const maxPriceValue = computed(() => {
   return Math.max(...Object.values(priceDistribution.value))
 })
 
-// 翻译价格标签，解决长度不一致的问题
-const priceDistributionTranslated = computed(() => {
-  if (!priceDistribution.value) return {}
-  
+// 标签翻译函数
+const starLabelTranslator = (label) => {
+  return `${label}星`
+}
+
+const priceLabelTranslator = (label) => {
   const translations = {
-    'Budget': '经济',
-    'Moderate': '适中',
-    'Expensive': '高价',
-    'Very Expensive': '豪华',
-    'Luxury': '奢华',
+    'Budget': '经济型',
+    'Moderate': '适中型',
+    'Expensive': '高价型',
+    'Very Expensive': '豪华型',
+    'Luxury': '奢华型',
     'Unknown': '未知'
   }
-  
-  const result = {}
-  Object.entries(priceDistribution.value).forEach(([key, value]) => {
-    result[translations[key] || key] = value
+  return translations[label] || label
+}
+
+// 事件处理
+const handleStarClick = ({ item }) => {
+  // 导航到分析页面并筛选对应星级
+  router.push({
+    path: '/analytics',
+    query: { stars: item.originalLabel || item.label }
   })
-  
-  return result
-})
+}
 
-// 获取原始价格标签（用于悬停提示）
-const getPriceOriginal = (translatedPrice) => {
-  const reverseTranslations = {
-    '经济': 'Budget',
-    '适中': 'Moderate',
-    '高价': 'Expensive',
-    '豪华': 'Very Expensive',
-    '奢华': 'Luxury',
-    '未知': 'Unknown'
+const handlePriceClick = ({ item }) => {
+  // 导航到探索页面并筛选对应价格
+  router.push({
+    path: '/explore',
+    query: { price: item.originalLabel || item.label }
+  })
+}
+
+const retryFetch = async () => {
+  try {
+    await dataStore.fetchSummary()
+  } catch (err) {
+    console.error('重试失败:', err)
   }
-  
-  return reverseTranslations[translatedPrice] || translatedPrice
-}
-
-// 方法
-const getPercentage = (value, total) => {
-  return total > 0 ? (value / total * 100).toFixed(1) : 0
-}
-
-// 计算最大百分比，避免条形图过短或过长
-const getMaxPercentage = (value, maxValue, maxPercent = 80) => {
-  if (maxValue === 0) return 0
-  return (value / maxValue * maxPercent).toFixed(1)
 }
 
 // 生命周期
@@ -273,104 +274,7 @@ onMounted(async () => {
   margin-bottom: 48px;
 }
 
-.chart-container {
-  padding: 10px 0;
-}
 
-.chart {
-  padding: 15px 10px;
-  
-  .chart-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 20px;
-    gap: 16px;
-
-    &:last-child {
-      margin-bottom: 0;
-    }
-
-    .chart-label {
-      min-width: 70px;
-      width: 70px;
-      font-weight: 500;
-      color: #4a5568;
-      display: flex;
-      align-items: center;
-      justify-content: flex-start;
-    }
-
-    .chart-bar {
-      flex: 1;
-      height: 28px;
-      background: #e2e8f0;
-      border-radius: 14px;
-      overflow: hidden;
-      position: relative;
-      box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
-
-      .chart-fill {
-        height: 100%;
-        border-radius: 14px;
-        transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        display: flex;
-        align-items: center;
-        padding-left: 12px;
-        
-        .bar-value {
-          color: rgba(255, 255, 255, 0.9);
-          font-size: 12px;
-          font-weight: 500;
-          opacity: 0;
-          transition: opacity 0.3s ease;
-        }
-        
-        &:hover .bar-value {
-          opacity: 1;
-        }
-      }
-    }
-
-    .chart-count {
-      min-width: 60px;
-      text-align: right;
-      font-weight: 600;
-      color: #2d3748;
-    }
-  }
-}
-
-.star-chart {
-  .star-label {
-    .star-icon {
-      width: 24px;
-      height: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #4c51bf;
-      color: white;
-      border-radius: 50%;
-      font-weight: bold;
-      margin-right: 4px;
-    }
-  }
-  
-  .star-fill {
-    background: linear-gradient(135deg, #6366f1 0%, #4c51bf 100%);
-  }
-}
-
-.price-chart {
-  .price-label {
-    cursor: help;
-  }
-  
-  .price-fill {
-    background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
-  }
-}
 
 .quick-actions {
   .action-buttons {

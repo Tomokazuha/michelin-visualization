@@ -48,11 +48,21 @@ export const useDataStore = defineStore('data', () => {
   const fetchSummary = async () => {
     try {
       loading.value = true
+      error.value = null
       const response = await api.get('/summary')
       summary.value = response.data.data
+      
+      // 添加时间戳
+      summary.value._lastUpdated = new Date().toISOString()
       return response.data.data
     } catch (err) {
-      error.value = '获取数据摘要失败'
+      const errorMsg = err.response?.data?.message || '获取数据摘要失败'
+      error.value = {
+        type: 'fetch_summary',
+        message: errorMsg,
+        details: err.message,
+        timestamp: new Date().toISOString()
+      }
       throw err
     } finally {
       loading.value = false

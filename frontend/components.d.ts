@@ -7,6 +7,7 @@ export {}
 
 declare module 'vue' {
   export interface GlobalComponents {
+    AnimatedNumber: typeof import('./src/components/common/AnimatedNumber.vue')['default']
     AppHeader: typeof import('./src/components/layout/AppHeader.vue')['default']
     BoxPlotChart: typeof import('./src/components/charts/BoxPlotChart.vue')['default']
     ChordDiagram: typeof import('./src/components/charts/ChordDiagram.vue')['default']
@@ -18,6 +19,8 @@ declare module 'vue' {
     ElCheckbox: typeof import('element-plus/es')['ElCheckbox']
     ElCheckboxButton: typeof import('element-plus/es')['ElCheckboxButton']
     ElCheckboxGroup: typeof import('element-plus/es')['ElCheckboxGroup']
+    ElCollapse: typeof import('element-plus/es')['ElCollapse']
+    ElCollapseItem: typeof import('element-plus/es')['ElCollapseItem']
     ElDescriptions: typeof import('element-plus/es')['ElDescriptions']
     ElDescriptionsItem: typeof import('element-plus/es')['ElDescriptionsItem']
     ElDialog: typeof import('element-plus/es')['ElDialog']
@@ -49,9 +52,14 @@ declare module 'vue' {
     ElTag: typeof import('element-plus/es')['ElTag']
     ElText: typeof import('element-plus/es')['ElText']
     ElTooltip: typeof import('element-plus/es')['ElTooltip']
+    ErrorState: typeof import('./src/components/common/ErrorState.vue')['default']
     GlobalMessage: typeof import('./src/components/common/GlobalMessage.vue')['default']
     HeatmapChart: typeof import('./src/components/charts/HeatmapChart.vue')['default']
+    InteractiveBarChart: typeof import('./src/components/charts/InteractiveBarChart.vue')['default']
+    InteractiveStatCard: typeof import('./src/components/common/InteractiveStatCard.vue')['default']
+    LoadingState: typeof import('./src/components/common/LoadingState.vue')['default']
     MapChart: typeof import('./src/components/charts/MapChart.vue')['default']
+    MapHeatmap: typeof import('./src/components/charts/MapHeatmap.vue')['default']
     NetworkChart: typeof import('./src/components/charts/NetworkChart.vue')['default']
     ParetoChart: typeof import('./src/components/charts/ParetoChart.vue')['default']
     RadarChart: typeof import('./src/components/charts/RadarChart.vue')['default']
