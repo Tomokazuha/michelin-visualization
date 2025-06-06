@@ -3,7 +3,7 @@
     <div class="page-header">
       <h1 class="page-title">
         <i class="el-icon-data-analysis"></i>
-        高级可视化
+        深入可视化
       </h1>
       <p class="page-description">探索米其林餐厅数据的多维度视角和深层关联</p>
     </div>

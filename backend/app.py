@@ -25,7 +25,25 @@ import random
 plt.rcParams['font.sans-serif'] = ['SimHei', 'DejaVu Sans']
 plt.rcParams['axes.unicode_minus'] = False
 
+
+class NpEncoder(json.JSONEncoder):
+    """自定义JSON编码器，处理numpy数据类型和NaN值"""
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            if np.isnan(obj):
+                return None
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if pd.isna(obj):
+            return None
+        return super(NpEncoder, self).default(obj)
+
+
 app = Flask(__name__)
+app.json_encoder = NpEncoder
 CORS(app)  # 允许跨域请求
 
 # 配置日志
@@ -151,31 +169,84 @@ def get_restaurants():
         region = request.args.get('region')
         city = request.args.get('city')
         cuisine = request.args.get('cuisine')
+        price_level = request.args.get('price_level')
+        year_start = request.args.get('year_start')
+        year_end = request.args.get('year_end')
+        search_query = request.args.get('q')  # 添加搜索查询参数
+        
+        # 调试信息
+        logger.info(f"查询参数: page={page}, per_page={per_page}, stars={stars}, region={region}, city={city}, cuisine={cuisine}")
         
         df = data_service.get_data('cleaned')
         if df is None:
             return jsonify({'success': False, 'error': '数据未加载'}), 404
         
+        logger.info(f"原始数据量: {len(df)}")
+        
         # 应用过滤器
         filtered_df = df.copy()
         
+        # 应用搜索查询（多字段搜索）
+        if search_query and search_query.strip():
+            search_term = search_query.strip()
+            search_condition = (
+                filtered_df['name'].str.contains(search_term, case=False, na=False) |
+                filtered_df['city'].str.contains(search_term, case=False, na=False) |
+                filtered_df['region'].str.contains(search_term, case=False, na=False) |
+                filtered_df['cuisine'].str.contains(search_term, case=False, na=False)
+            )
+            filtered_df = filtered_df[search_condition]
+            logger.info(f"搜索 '{search_term}' 后数据量: {len(filtered_df)}")
+        
         if stars:
+            before_count = len(filtered_df)
             filtered_df = filtered_df[filtered_df['stars'] == int(stars)]
+            logger.info(f"筛选 {stars} 星后数据量: {before_count} -> {len(filtered_df)}")
         
         if region:
+            before_count = len(filtered_df)
             filtered_df = filtered_df[filtered_df['region'].str.contains(region, case=False, na=False)]
+            logger.info(f"筛选地区 '{region}' 后数据量: {before_count} -> {len(filtered_df)}")
         
         if city:
+            before_count = len(filtered_df)
             filtered_df = filtered_df[filtered_df['city'].str.contains(city, case=False, na=False)]
+            logger.info(f"筛选城市 '{city}' 后数据量: {before_count} -> {len(filtered_df)}")
         
         if cuisine:
+            before_count = len(filtered_df)
             filtered_df = filtered_df[filtered_df['cuisine'].str.contains(cuisine, case=False, na=False)]
+            logger.info(f"筛选菜系 '{cuisine}' 后数据量: {before_count} -> {len(filtered_df)}")
+        
+        if price_level:
+            before_count = len(filtered_df)
+            if 'price_level' in filtered_df.columns:
+                filtered_df = filtered_df[filtered_df['price_level'] == price_level]
+            else:
+                # 如果没有price_level列，使用price列
+                filtered_df = filtered_df[filtered_df['price'] == price_level]
+            logger.info(f"筛选价格 '{price_level}' 后数据量: {before_count} -> {len(filtered_df)}")
+        
+        if year_start:
+            before_count = len(filtered_df)
+            filtered_df = filtered_df[filtered_df['year'] >= int(year_start)]
+            logger.info(f"筛选年份 >= {year_start} 后数据量: {before_count} -> {len(filtered_df)}")
+        
+        if year_end:
+            before_count = len(filtered_df)
+            filtered_df = filtered_df[filtered_df['year'] <= int(year_end)]
+            logger.info(f"筛选年份 <= {year_end} 后数据量: {before_count} -> {len(filtered_df)}")
         
         # 分页
         total = len(filtered_df)
         start_idx = (page - 1) * per_page
         end_idx = start_idx + per_page
         page_data = filtered_df.iloc[start_idx:end_idx]
+        
+        logger.info(f"最终数据量: {total}, 分页: {start_idx}-{end_idx}, 返回: {len(page_data)}")
+        
+        # 清理NaN值
+        page_data = page_data.fillna('')
         
         # 转换为JSON格式
         restaurants = []
@@ -184,16 +255,16 @@ def get_restaurants():
                 'name': row.get('name', ''),
                 'city': row.get('city', ''),
                 'region': row.get('region', ''),
-                'stars': int(row.get('stars', 0)),
+                'stars': int(row.get('stars', 0)) if pd.notna(row.get('stars')) else 0,
                 'cuisine': row.get('cuisine', ''),
-                'price': row.get('price', ''),
-                'price_level': row.get('price_level', ''),
-                'year': int(row.get('year', 0)),
+                'price': row.get('price', '') if pd.notna(row.get('price')) else '',
+                'price_level': row.get('price_level', '') if pd.notna(row.get('price_level')) else '',
+                'year': int(row.get('year', 0)) if pd.notna(row.get('year')) else 0,
                 'latitude': float(row.get('latitude', 0)) if pd.notna(row.get('latitude')) else None,
                 'longitude': float(row.get('longitude', 0)) if pd.notna(row.get('longitude')) else None,
-                'url': row.get('url', ''),
-                'continent': row.get('continent', ''),
-                'climate_zone': row.get('climate_zone', '')
+                'url': row.get('url', '') if pd.notna(row.get('url')) else '',
+                'continent': row.get('continent', '') if pd.notna(row.get('continent')) else '',
+                'climate_zone': row.get('climate_zone', '') if pd.notna(row.get('climate_zone')) else ''
             }
             restaurants.append(restaurant)
         

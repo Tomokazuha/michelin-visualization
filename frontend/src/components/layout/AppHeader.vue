@@ -16,59 +16,56 @@
 
       <!-- 导航菜单 -->
       <nav class="header-nav">
-        <el-menu
-          :default-active="activeIndex"
-          mode="horizontal"
-          background-color="transparent"
-          text-color="#333"
-          active-text-color="#667eea"
-          @select="handleMenuSelect"
-        >
-          <el-menu-item index="/dashboard">
+        <div class="nav-menu">
+          <router-link 
+            to="/dashboard" 
+            class="nav-item"
+            :class="{ active: activeIndex === '/dashboard' }"
+          >
             <el-icon><DataAnalysis /></el-icon>
             <span>数据概览</span>
-          </el-menu-item>
-          <el-menu-item index="/map">
+          </router-link>
+          <router-link 
+            to="/map" 
+            class="nav-item"
+            :class="{ active: activeIndex === '/map' }"
+          >
             <el-icon><Location /></el-icon>
             <span>地图分析</span>
-          </el-menu-item>
-          <el-menu-item index="/analytics">
+          </router-link>
+          <router-link 
+            to="/analytics" 
+            class="nav-item"
+            :class="{ active: activeIndex === '/analytics' }"
+          >
             <el-icon><TrendCharts /></el-icon>
             <span>深度分析</span>
-          </el-menu-item>
-          <el-menu-item index="/explore">
+          </router-link>
+          <router-link 
+            to="/explore" 
+            class="nav-item"
+            :class="{ active: activeIndex === '/explore' }"
+          >
             <el-icon><Search /></el-icon>
             <span>数据探索</span>
-          </el-menu-item>
-          <el-menu-item index="/advanced-viz">
+          </router-link>
+          <router-link 
+            to="/advanced-viz" 
+            class="nav-item"
+            :class="{ active: activeIndex === '/advanced-viz' }"
+          >
             <el-icon><DataAnalysis /></el-icon>
-            <span>高级可视化</span>
-          </el-menu-item>
-        </el-menu>
-      </nav>
-
-      <!-- 右侧工具栏 -->
-      <div class="header-tools">
-        <!-- 搜索框 -->
-        <div class="search-box">
-          <el-input
-            v-model="searchQuery"
-            placeholder="搜索餐厅..."
-            prefix-icon="Search"
-            size="small"
-            style="width: 200px"
-            @keyup.enter="handleSearch"
-            clearable
-          />
+            <span>深入可视化</span>
+          </router-link>
         </div>
-      </div>
+      </nav>
     </div>
   </header>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { useAppStore } from '@/store/app'
 import {
   StarFilled,
@@ -78,29 +75,11 @@ import {
   Search
 } from '@element-plus/icons-vue'
 
-const router = useRouter()
 const route = useRoute()
 const appStore = useAppStore()
 
-// 响应式数据
-const searchQuery = ref('')
-
 // 计算属性
 const activeIndex = computed(() => route.path)
-
-// 方法
-const handleMenuSelect = (index) => {
-  router.push(index)
-}
-
-const handleSearch = () => {
-  if (searchQuery.value.trim()) {
-    router.push({
-      path: '/explore',
-      query: { q: searchQuery.value.trim() }
-    })
-  }
-}
 </script>
 
 <style lang="scss" scoped>
@@ -117,9 +96,9 @@ const handleSearch = () => {
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 24px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 3fr 1fr;
   align-items: center;
-  justify-content: space-between;
   height: 64px;
 }
 
@@ -127,6 +106,7 @@ const handleSearch = () => {
   display: flex;
   align-items: center;
   gap: 12px;
+  justify-self: start;
 }
 
 .logo {
@@ -158,73 +138,88 @@ const handleSearch = () => {
 }
 
 .header-nav {
-  flex: 1;
   display: flex;
   justify-content: center;
-  margin: 0 40px;
+  justify-self: center;
 
-  :deep(.el-menu) {
-    border-bottom: none;
+  .nav-menu {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
-  :deep(.el-menu-item) {
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-radius: 8px;
     border-bottom: 2px solid transparent;
+    text-decoration: none;
+    color: #333;
     transition: all 0.3s ease;
+    white-space: nowrap;
+    font-size: 14px;
+    font-weight: 500;
 
     &:hover {
       background-color: rgba(102, 126, 234, 0.1);
       border-bottom-color: #667eea;
+      color: #667eea;
     }
 
-    &.is-active {
+    &.active {
       background-color: rgba(102, 126, 234, 0.1);
       border-bottom-color: #667eea;
+      color: #667eea;
     }
-  }
-}
 
-.header-tools {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
+    .el-icon {
+      font-size: 16px;
+    }
 
-.search-box {
-  :deep(.el-input__wrapper) {
-    border-radius: 20px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    span {
+      font-size: 14px;
+    }
   }
 }
 
 // 响应式设计
-@media (max-width: 1024px) {
-  .header-container {
-    padding: 0 16px;
-  }
-
+@media (max-width: 1200px) {
   .header-nav {
-    margin: 0 20px;
-  }
-
-  .search-box {
-    :deep(.el-input) {
-      width: 150px !important;
+    .nav-item {
+      padding: 8px 12px;
+      
+      span {
+        display: none;
+      }
+      
+      .el-icon {
+        margin-right: 0;
+      }
     }
   }
 }
 
+@media (max-width: 1024px) {
+  .header-container {
+    padding: 0 16px;
+    grid-template-columns: auto 1fr auto;
+  }
+}
+
 @media (max-width: 768px) {
+  .header-container {
+    grid-template-columns: auto 1fr;
+  }
+  
   .brand-text {
     display: none;
   }
-
+  
   .header-nav {
-    margin: 0 10px;
-  }
-
-  .search-box {
-    :deep(.el-input) {
-      width: 120px !important;
+    .nav-item {
+      padding: 6px 8px;
     }
   }
 }

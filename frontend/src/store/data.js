@@ -19,7 +19,10 @@ export const useDataStore = defineStore('data', () => {
     region: null,
     city: null,
     cuisine: null,
-    year: null
+    year: null,
+    price_level: null,
+    year_start: null,
+    year_end: null
   })
   const pagination = ref({
     page: 1,
@@ -87,11 +90,52 @@ export const useDataStore = defineStore('data', () => {
       })
 
       const response = await api.get('/restaurants', { params: queryParams })
-      restaurants.value = response.data.data.restaurants
-      pagination.value = response.data.data.pagination
-      return response.data.data
+      
+      // 处理可能的JSON字符串响应
+      let parsedData = response.data
+      if (typeof response.data === 'string') {
+        try {
+          parsedData = JSON.parse(response.data)
+        } catch (parseError) {
+          throw new Error('API响应格式错误')
+        }
+      }
+      
+      // 添加数据验证和安全访问
+      if (parsedData && parsedData.success && parsedData.data) {
+        const apiData = parsedData.data
+        const restaurantsData = apiData.restaurants || []
+        const paginationData = apiData.pagination || {
+          page: 1,
+          per_page: 50,
+          total: 0,
+          pages: 0
+        }
+        
+        restaurants.value = restaurantsData
+        pagination.value = paginationData
+        
+        return parsedData.data
+      } else {
+        // 如果数据结构不符合预期，设置默认值
+        restaurants.value = []
+        pagination.value = {
+          page: 1,
+          per_page: 50,
+          total: 0,
+          pages: 0
+        }
+        return { restaurants: [], pagination: pagination.value }
+      }
     } catch (err) {
       error.value = '获取餐厅数据失败'
+      restaurants.value = []
+      pagination.value = {
+        page: 1,
+        per_page: 50,
+        total: 0,
+        pages: 0
+      }
       throw err
     } finally {
       loading.value = false
@@ -164,7 +208,10 @@ export const useDataStore = defineStore('data', () => {
       region: null,
       city: null,
       cuisine: null,
-      year: null
+      year: null,
+      price_level: null,
+      year_start: null,
+      year_end: null
     }
     pagination.value.page = 1
   }

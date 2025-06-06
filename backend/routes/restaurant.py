@@ -83,20 +83,22 @@ def get_restaurants():
         # 构建响应
         response_data = {
             'success': True,
-            'data': restaurants,
-            'pagination': {
-                'total': total,
-                'page': page,
-                'per_page': per_page,
-                'total_pages': (total + per_page - 1) // per_page,
-                'has_next': end_idx < total,
-                'has_prev': page > 1
-            },
-            'filters_applied': {
-                'stars': args.get('stars'),
-                'region': args.get('region'),
-                'city': args.get('city'),
-                'cuisine': args.get('cuisine')
+            'data': {
+                'restaurants': restaurants,
+                'pagination': {
+                    'total': total,
+                    'page': page,
+                    'per_page': per_page,
+                    'total_pages': (total + per_page - 1) // per_page,
+                    'has_next': end_idx < total,
+                    'has_prev': page > 1
+                },
+                'filters_applied': {
+                    'stars': args.get('stars'),
+                    'region': args.get('region'),
+                    'city': args.get('city'),
+                    'cuisine': args.get('cuisine')
+                }
             }
         }
         
@@ -158,9 +160,11 @@ def search_restaurants():
         logger.info(f"搜索 '{query}' 返回 {len(search_results)} 条结果")
         return jsonify({
             'success': True,
-            'data': search_results,
-            'query': query,
-            'count': len(search_results)
+            'data': {
+                'restaurants': search_results,
+                'total': len(search_results),
+                'query': query
+            }
         })
         
     except ValueError as e:

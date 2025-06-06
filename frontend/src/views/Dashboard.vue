@@ -12,7 +12,7 @@
         <InteractiveStatCard
           label="总餐厅数"
           :value="summary?.total_restaurants || 0"
-          icon="Restaurant"
+          icon="DataAnalysis"
           icon-color="#3b82f6"
           :loading="loading"
           clickable
@@ -131,7 +131,7 @@
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDataStore } from '@/store/data'
-import { Loading, Location, TrendCharts, Search } from '@element-plus/icons-vue'
+import { Loading, Location, TrendCharts, Search, DataAnalysis } from '@element-plus/icons-vue'
 import InteractiveStatCard from '@/components/common/InteractiveStatCard.vue'
 import InteractiveBarChart from '@/components/charts/InteractiveBarChart.vue'
 

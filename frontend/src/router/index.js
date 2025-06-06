@@ -57,7 +57,7 @@ const routes = [
     name: 'AdvancedViz',
     component: () => import('@/views/AdvancedViz.vue'),
     meta: {
-      title: '高级可视化',
+      title: '深入可视化',
       icon: 'el-icon-data-analysis',
       description: '深度分析与高级图表'
     }
