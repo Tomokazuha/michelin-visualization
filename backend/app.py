@@ -923,7 +923,6 @@ def get_feature_analysis():
         
         feature_importance = {
             'features': features,
-            'model_accuracy': 0.85,  # 基于数据质量的估计
             'total_features': len(df.columns),
             'selected_features': len(features)
         }
@@ -951,7 +950,6 @@ def get_feature_analysis():
                     {'name': '地理区域分布', 'importance': 0.34, 'description': '地理区域的多样性'},
                     {'name': '菜系多样性', 'importance': 0.28, 'description': '菜系类型的丰富程度'}
                 ],
-                'model_accuracy': 0.85,
                 'total_features': 20,
                 'selected_features': 10
             }

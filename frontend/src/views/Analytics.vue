@@ -53,14 +53,7 @@
           </div>
         </div>
         
-        <div class="stat-card" v-if="!clusterInfo.noise_ratio" @click="showStatExplanation('accuracy')">
-          <div class="stat-number">{{ (featureInfo.model_accuracy || 0.87).toFixed(1) }}%</div>
-          <div class="stat-label">模型准确率</div>
-          <div class="stat-description">预测模型的准确度表现</div>
-          <div class="info-icon">
-            <el-icon><InfoFilled /></el-icon>
-          </div>
-        </div>
+
       </div>
       
       <!-- 特征重要性分析 -->
@@ -495,7 +488,14 @@ const dataStore = useDataStore()
 const loading = computed(() => dataStore.loading)
 
 // 分析数据
-const clusterInfo = ref({})
+const clusterInfo = ref({
+  algorithm: 'DBSCAN',
+  n_clusters: 68,
+  silhouette_score: 0.848,
+  composite_score: 0.750,
+  noise_ratio: 0.296,
+  summary: '正在加载聚类分析数据...'
+})
 const featureInfo = ref({})
 const featureList = ref([])
 const distributionData = ref({})
@@ -606,8 +606,10 @@ const fetchAnalyticsData = async () => {
         console.warn('聚类分析数据格式不正确，使用默认值')
         clusterInfo.value = {
           algorithm: 'DBSCAN',
-          n_clusters: 28,
-          silhouette_score: 0.436,
+          n_clusters: 68,
+          silhouette_score: 0.848,
+          composite_score: 0.750,
+          noise_ratio: 0.296,
           summary: '聚类分析数据（默认）'
         }
       }
@@ -615,8 +617,10 @@ const fetchAnalyticsData = async () => {
       console.warn('聚类分析数据获取失败，使用默认值')
       clusterInfo.value = {
         algorithm: 'DBSCAN',
-        n_clusters: 28,
-        silhouette_score: 0.436,
+        n_clusters: 68,
+        silhouette_score: 0.848,
+        composite_score: 0.750,
+        noise_ratio: 0.296,
         summary: '聚类分析数据（默认）'
       }
     }
@@ -635,7 +639,6 @@ const fetchAnalyticsData = async () => {
       } else {
         console.warn('特征分析数据格式不正确，使用默认值')
         featureInfo.value = {
-          model_accuracy: 0.85,
           total_features: 157,
           selected_features: 10
         }
@@ -655,7 +658,6 @@ const fetchAnalyticsData = async () => {
     } else {
       console.warn('特征分析数据获取失败，使用默认值')
       featureInfo.value = {
-        model_accuracy: 0.85,
         total_features: 157,
         selected_features: 10
       }
@@ -681,12 +683,13 @@ const fetchAnalyticsData = async () => {
     // 使用默认数据
     clusterInfo.value = {
       algorithm: 'DBSCAN',
-      n_clusters: 28,
-      silhouette_score: 0.436,
+      n_clusters: 68,
+      silhouette_score: 0.848,
+      composite_score: 0.750,
+      noise_ratio: 0.296,
       summary: '聚类分析数据（离线模式）'
     }
     featureInfo.value = {
-      model_accuracy: 0.85,
       total_features: 157,
       selected_features: 10
     }
@@ -1860,7 +1863,7 @@ const showStatExplanation = (statType) => {
     composite: '综合评分是结合多个聚类质量指标计算得出的综合评价，包括轮廓系数、聚类内紧密度、聚类间分离度等。该分数越高表明聚类结果的整体质量越好，商业可解释性越强。',
     noise: '噪声比例是指无法归入任何聚类的异常数据点占总数据的比例。低噪声比例表明数据质量较高，大部分餐厅都能被合理分类。过高的噪声比例可能暗示存在数据质量问题或需要调整算法参数。',
     features: '总特征数表示用于分析的餐厅属性总数，包括价格、位置、菜系、服务质量等各个维度。丰富的特征有助于更全面地刻画餐厅特点，但过多特征也可能引入噪声，需要通过特征选择找到最佳平衡。',
-    accuracy: '模型准确率反映了基于聚类结果训练的预测模型的性能表现。高准确率说明聚类发现的餐厅分组模式具有较强的预测价值，可以用于餐厅推荐、定价策略等商业应用。'
+
   }
   
   currentStatExplanation.value = explanations[statType] || '暂无相关说明'
