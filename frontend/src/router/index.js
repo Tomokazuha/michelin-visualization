@@ -52,16 +52,7 @@ const routes = [
       description: '交互式数据查询和探索工具'
     }
   },
-  {
-    path: '/advanced-viz',
-    name: 'AdvancedViz',
-    component: () => import('@/views/AdvancedViz.vue'),
-    meta: {
-      title: '深入可视化',
-      icon: 'el-icon-data-analysis',
-      description: '深度分析与高级图表'
-    }
-  },
+
   {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',

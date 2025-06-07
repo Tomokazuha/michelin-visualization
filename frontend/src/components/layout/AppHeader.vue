@@ -49,14 +49,7 @@
             <el-icon><Search /></el-icon>
             <span>数据探索</span>
           </router-link>
-          <router-link 
-            to="/advanced-viz" 
-            class="nav-item"
-            :class="{ active: activeIndex === '/advanced-viz' }"
-          >
-            <el-icon><DataAnalysis /></el-icon>
-            <span>深入可视化</span>
-          </router-link>
+
         </div>
       </nav>
     </div>
