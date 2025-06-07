@@ -273,7 +273,7 @@
                   >
                     <el-option
                       v-for="cluster in clusterFeatures"
-                      :key="cluster.name"
+                      :key="cluster.id"
                       :label="cluster.name"
                       :value="cluster.name"
                     >
@@ -1339,10 +1339,20 @@ const fetchRealRestaurantData = async () => {
       restaurantList.value = processedRestaurants
       filteredRestaurantList.value = [...processedRestaurants]
       console.log(`处理后共有 ${processedRestaurants.length} 家餐厅`)
+      
+      // 数据加载完成后，应用当前的筛选条件
+      nextTick(() => {
+        filterRestaurants()
+      })
     } else {
       console.error('API返回数据格式不正确，使用模拟数据替代', responseData)
       restaurantList.value = generateRestaurantData()
       filteredRestaurantList.value = [...restaurantList.value]
+      
+      // 使用模拟数据时也要应用筛选
+      nextTick(() => {
+        filterRestaurants()
+      })
     }
   } catch (error) {
     console.error('获取餐厅数据详细错误:', error)
@@ -1355,6 +1365,11 @@ const fetchRealRestaurantData = async () => {
     // 出错时使用模拟数据
     restaurantList.value = generateRestaurantData()
     filteredRestaurantList.value = [...restaurantList.value]
+    
+    // 出错时也要应用筛选
+    nextTick(() => {
+      filterRestaurants()
+    })
   } finally {
     dataStore.loading = false
   }
@@ -1763,34 +1778,54 @@ const generateRestaurantData = () => {
 
 // 餐厅筛选方法
 const filterRestaurants = () => {
+  // 如果没有餐厅数据，直接返回
+  if (!restaurantList.value || restaurantList.value.length === 0) {
+    filteredRestaurantList.value = []
+    console.log('没有餐厅数据可筛选')
+    return
+  }
+
   // 对列表应用筛选
   let filtered = [...restaurantList.value]
   
+  console.log('开始筛选，原始数据量:', filtered.length)
+  console.log('筛选条件 - 聚类:', selectedCluster.value, '星级:', selectedStar.value, '搜索:', restaurantSearch.value)
+  
   // 应用聚类筛选
   if (selectedCluster.value) {
-    const clusterIndex = clusterFeatures.value.findIndex(c => c.name === selectedCluster.value)
-    if (clusterIndex !== -1) {
-      filtered = filtered.filter(r => r.cluster === clusterIndex)
+    // 通过聚类名称找到对应的聚类特征对象
+    const selectedClusterFeature = clusterFeatures.value.find(c => c.name === selectedCluster.value)
+    if (selectedClusterFeature) {
+      // 使用聚类特征的id进行匹配
+      filtered = filtered.filter(r => r.cluster === selectedClusterFeature.id)
+      console.log('聚类筛选后数据量:', filtered.length, '聚类ID:', selectedClusterFeature.id)
+    } else {
+      console.warn('未找到对应的聚类特征:', selectedCluster.value)
     }
   }
   
   // 应用星级筛选
   if (selectedStar.value) {
-    filtered = filtered.filter(r => r.stars === parseInt(selectedStar.value))
+    const starNumber = parseInt(selectedStar.value)
+    filtered = filtered.filter(r => r.stars === starNumber)
+    console.log('星级筛选后数据量:', filtered.length, '目标星级:', starNumber)
   }
   
   // 应用搜索筛选
-  if (restaurantSearch.value.trim()) {
+  if (restaurantSearch.value && restaurantSearch.value.trim()) {
     const searchTerm = restaurantSearch.value.toLowerCase().trim()
-    filtered = filtered.filter(r => 
-      r.name.toLowerCase().includes(searchTerm) || 
-      r.cuisine.toLowerCase().includes(searchTerm) || 
-      r.location.toLowerCase().includes(searchTerm)
-    )
+    filtered = filtered.filter(r => {
+      const nameMatch = r.name && r.name.toLowerCase().includes(searchTerm)
+      const cuisineMatch = r.cuisine && r.cuisine.toLowerCase().includes(searchTerm) 
+      const locationMatch = r.location && r.location.toLowerCase().includes(searchTerm)
+      return nameMatch || cuisineMatch || locationMatch
+    })
+    console.log('搜索筛选后数据量:', filtered.length, '搜索词:', searchTerm)
   }
   
   // 更新列表
   filteredRestaurantList.value = filtered
+  console.log('最终筛选结果数量:', filtered.length)
   
   // 同时更新图表的高亮
   updateChartHighlights(filtered)
