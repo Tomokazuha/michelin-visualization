@@ -506,6 +506,7 @@ let priceChart = null
 let regionChart = null
 let cuisineChart = null
 let clusterChart = null
+let starsChart = null
 
 // 聚类标签类型
 const tagTypes = ['success', 'info', 'warning', 'danger']
@@ -1032,12 +1033,29 @@ const initCuisineChart = () => {
 }
 
 // 初始化聚类散点图
-const initClusterChart = () => {
+const initClusterChart = async () => {
+  // 确保DOM已经渲染
+  await nextTick()
+  
   const chartDom = document.getElementById('cluster-scatter-chart')
   if (!chartDom) {
     console.error("找不到散点图DOM元素");
+    // 等待一段时间后重试
+    setTimeout(() => {
+      const retryChartDom = document.getElementById('cluster-scatter-chart')
+      if (retryChartDom) {
+        console.log("重试成功找到散点图DOM元素");
+        initClusterChartWithDom(retryChartDom)
+      }
+    }, 100)
     return;
   }
+  
+  initClusterChartWithDom(chartDom)
+}
+
+// 使用指定的DOM元素初始化聚类散点图
+const initClusterChartWithDom = (chartDom) => {
   
   clusterChart = echarts.init(chartDom)
   
@@ -1270,7 +1288,7 @@ const initAllCharts = async () => {
   initPriceChart()
   initRegionChart()
   initCuisineChart()
-  initClusterChart()
+  await initClusterChart()
   
   // 监听窗口大小变化
   window.addEventListener('resize', () => {

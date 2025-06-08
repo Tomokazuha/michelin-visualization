@@ -403,20 +403,24 @@ const availableCities = computed(() => {
 // 工具函数
 const formatPriceLevel = (priceLevel) => {
   const priceMap = {
-    '€': '经济实惠',
-    '€€': '中等价位', 
-    '€€€': '高档消费',
-    '€€€€': '奢华体验'
+    // 英文价格等级映射
+    'Budget': '经济',
+    'Moderate': '适中', 
+    'Expensive': '高价',
+    'Very Expensive': '豪华',
+    'Luxury': '奢华'
   }
   return priceMap[priceLevel] || priceLevel
 }
 
 const getPriceType = (priceLevel) => {
   const typeMap = {
-    '€': 'success',
-    '€€': 'primary',
-    '€€€': 'warning', 
-    '€€€€': 'danger'
+    // 英文价格等级类型
+    'Budget': 'success',
+    'Moderate': 'info',
+    'Expensive': 'warning', 
+    'Very Expensive': 'danger',
+    'Luxury': 'danger'
   }
   return typeMap[priceLevel] || 'info'
 }
@@ -442,6 +446,16 @@ const fetchFilterOptions = async () => {
     
     if (response.data.success) {
       filterOptions.value = response.data.data
+      
+      // 对价格等级进行从低到高排序
+      if (filterOptions.value.price_levels) {
+        const priceOrder = ['Budget', 'Moderate', 'Expensive', 'Very Expensive', 'Luxury']
+        filterOptions.value.price_levels = filterOptions.value.price_levels.sort((a, b) => {
+          const indexA = priceOrder.indexOf(a)
+          const indexB = priceOrder.indexOf(b)
+          return indexA - indexB
+        })
+      }
       
       // 构建地区-城市映射
       const rawData = await axios.get('/api/restaurants?per_page=1000')
