@@ -13,6 +13,7 @@ import webbrowser
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 import argparse
+import platform
 
 class Colors:
     """终端颜色类"""
@@ -65,8 +66,8 @@ def check_requirements():
     print_colored("🔍 检查运行环境...", Colors.CYAN)
     
     # 检查Python版本
-    if sys.version_info < (3, 8):
-        print_colored("❌ 需要Python 3.8或更高版本", Colors.FAIL)
+    if sys.version_info < (3, 9):
+        print_colored("❌ 需要Python 3.9或更高版本", Colors.FAIL)
         return False
     
     # 检查后端目录和requirements.txt
@@ -108,6 +109,12 @@ def install_backend_deps():
         print_colored(f"❌ Python依赖安装失败: {e.stderr}", Colors.FAIL)
         return False
 
+def get_npm_command():
+    """获取适合当前系统的npm命令"""
+    if platform.system() == "Windows":
+        return "npm.cmd"
+    return "npm"
+
 def install_frontend_deps():
     """安装前端依赖"""
     print_colored("📦 安装前端依赖...", Colors.CYAN)
@@ -115,11 +122,15 @@ def install_frontend_deps():
     
     if not (frontend_dir / "node_modules").exists():
         try:
-            subprocess.run(["npm", "install"], cwd=frontend_dir, check=True)
+            npm_cmd = get_npm_command()
+            subprocess.run([npm_cmd, "install"], cwd=frontend_dir, check=True)
             print_colored("✅ 前端依赖安装成功", Colors.GREEN)
             return True
         except subprocess.CalledProcessError as e:
             print_colored(f"❌ 前端依赖安装失败: {e}", Colors.FAIL)
+            return False
+        except FileNotFoundError:
+            print_colored("❌ 找不到npm命令，请确保Node.js已正确安装", Colors.FAIL)
             return False
     else:
         print_colored("✅ 前端依赖已存在", Colors.GREEN)
@@ -156,8 +167,9 @@ def start_frontend():
     frontend_dir = Path("frontend")
     
     try:
+        npm_cmd = get_npm_command()
         process = subprocess.Popen(
-            ["npm", "run", "dev"],
+            [npm_cmd, "run", "dev"],
             cwd=frontend_dir,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -167,7 +179,7 @@ def start_frontend():
         )
         
         # Vue dev server可能使用5173或3000端口
-        ports_to_check = [5173, 3000]
+        ports_to_check = [3000, 5173]
         for port in ports_to_check:
             if wait_for_service(port, "前端开发服务", timeout=15):
                 print_colored(f"🔗 前端应用地址: http://localhost:{port}", Colors.GREEN)
@@ -175,6 +187,8 @@ def start_frontend():
         
         print_colored("❌ 前端服务启动失败", Colors.FAIL)
         
+    except FileNotFoundError:
+        print_colored("❌ 找不到npm命令，请确保Node.js已正确安装并添加到PATH环境变量", Colors.FAIL)
     except Exception as e:
         print_colored(f"❌ 启动前端服务失败: {e}", Colors.FAIL)
     

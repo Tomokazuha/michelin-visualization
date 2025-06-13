@@ -55,9 +55,9 @@
       <!-- 地图主体 -->
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title">全球分布地图</h3>
+          <h3 class="card-title">全球分布地图（地图的加载需要使用代理访问）</h3>
           <p class="card-subtitle">
-            {{ filteredRestaurants.length }} 家餐厅分布在全球各地
+            总计 {{ filteredRestaurants.length }} 家餐厅
           </p>
         </div>
         <div class="card-body">
@@ -81,7 +81,7 @@
         
         <div class="stat-card">
           <div class="stat-number">{{ geoStats.countries }}</div>
-          <div class="stat-label">覆盖国家</div>
+          <div class="stat-label">覆盖地区</div>
         </div>
         
         <div class="stat-card">

@@ -918,7 +918,7 @@ const initPriceChart = () => {
         },
         itemStyle: {
           color: function(params) {
-            const colors = ['#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272']
+            const colors = ['#0181BB', '#77DAD5', '#FFE877', '#DEDE0E', '#F96E91', '#232D3B']
             return colors[params.dataIndex % colors.length]
           }
         }
